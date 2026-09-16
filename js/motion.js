@@ -1,23 +1,22 @@
 /* ---------------------------------------------------------------------------
-   Motion.
+   Motion primitives.
 
    Native scroll throughout, with effects linked to scroll position. Scroll is
    deliberately not hijacked: a lerped fake-scroll container breaks keyboard
-   paging, trackpad momentum on mobile, find-in-page and anchor restoration,
-   and it is what most "smooth scroll" jank actually is. Everything here rides
-   the real scrollbar instead.
+   paging, trackpad momentum, find-in-page and anchor restoration.
 
-   Every animated property is transform, opacity or clip-path, so none of it
+   Animated properties are transform, opacity and clip-path, so none of it
    touches layout. One shared rAF loop drives the per-frame work rather than a
    listener per effect.
 --------------------------------------------------------------------------- */
 
-const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const COARSE  = matchMedia('(hover: none), (pointer: coarse)').matches;
 
-/* IntersectionObservers are retained here on purpose. An observer with live
+/* IntersectionObservers are retained on purpose. An observer with live
    targets but no remaining JS reference is collectable in Chromium, and when
-   that happens it delivers its initial batch and then silently never fires
-   again — which reads exactly like "scroll animations don't work below the
+   that happens it delivers its initial batch then silently never fires again
+   — which reads exactly like "scroll animations stop working below the
    fold". Holding the reference is the fix. */
 const OBSERVERS = new Set();
 export function keepObserver(io) { OBSERVERS.add(io); return io; }
@@ -27,41 +26,43 @@ export function releaseObserver(io) {
   OBSERVERS.delete(io);
 }
 
-const lerp = (a, b, t) => a + (b - a) * t;
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
-/* ------------------------------------------------------------ split text --- */
-/* Wraps each character in its own span and hands it an index, which the CSS
-   turns into a staggered transition-delay. Word spans keep wrapping sane.
-   Only used on the hero title — it is destructive to markup, so headings that
-   contain <em> use the scramble below instead. */
-
-export function splitText(el) {
-  const src = el.textContent;
-  const frag = document.createDocumentFragment();
-  let i = 0;
-
-  const rebuild = (text, wrapTag) => {
-    const host = wrapTag ? document.createElement(wrapTag) : frag;
-    for (const ch of text) {
-      const s = document.createElement('span');
-      s.className = ch === ' ' ? 'char char--space' : 'char';
-      s.style.setProperty('--i', i++);
-      s.textContent = ch;
-      host.appendChild(s);
-    }
-    if (wrapTag) frag.appendChild(host);
+/* ------------------------------------------------------------ canvas fit --- */
+/* devicePixelRatio changes on browser zoom and when a window moves to a
+   monitor with different scaling, and a `resize` event does not reliably
+   follow — the CSS pixel size of the viewport may not have changed at all.
+   A resolution media query is the only thing that fires on the change, and it
+   must be re-armed each time because the query encodes the old value. */
+export function watchDpr(fn) {
+  const arm = () => {
+    matchMedia(`(resolution: ${devicePixelRatio}dppx)`)
+      .addEventListener('change', () => { fn(); arm(); }, { once: true });
   };
+  arm();
+}
 
-  for (const child of el.childNodes) {
-    if (child.nodeType === 3) rebuild(child.data, null);
-    else rebuild(child.textContent, child.tagName);
+/* Keeps a canvas's backing store in step with its own CSS box.
+
+   The canvas MUST have a CSS width/height (100%, fixed px, anything). A
+   canvas is a replaced element, so with only `inset:0` and no CSS size its
+   `width:auto` resolves to its INTRINSIC size — the width attribute, which is
+   box*dpr — and the element ends up dpr times too big. At dpr 1 that is
+   invisible; at dpr 1.5 everything drawn lands at 1.5x the pointer. */
+export function fitCanvas(cv, ctx) {
+  let w = 0, h = 0;
+  function fit() {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    w = cv.clientWidth;
+    h = cv.clientHeight;
+    cv.width = Math.max(1, Math.round(w * dpr));
+    cv.height = Math.max(1, Math.round(h * dpr));
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);   // setting width/height resets it
   }
-
-  el.textContent = '';
-  el.appendChild(frag);
-  el.setAttribute('aria-label', src);
-  return el;
+  fit();
+  addEventListener('resize', fit, { passive: true });
+  watchDpr(fit);
+  return () => ({ w, h });
 }
 
 /* -------------------------------------------------------------- scramble --- */
@@ -93,8 +94,6 @@ export function scramble(el, dur = 820) {
       let out = '';
       for (let i = 0; i < item.text.length; i++) {
         const ch = item.text[i];
-        // Characters settle left to right, so it reads as resolving rather
-        // than as uniform static.
         const settleAt = ((seen + i) / total) * 0.82;
         if (ch === ' ' || p >= settleAt + 0.16) out += ch;
         else out += GLYPHS[(Math.random() * GLYPHS.length) | 0];
@@ -113,7 +112,7 @@ export function scramble(el, dur = 820) {
 /* --------------------------------------------------------------- reveals --- */
 
 export function initReveals(root = document) {
-  const targets = root.querySelectorAll('.r-up, .r-fade, .r-clip, [data-split], [data-scramble]');
+  const targets = root.querySelectorAll('.r-up, .r-fade, .r-clip, [data-scramble]');
   if (!targets.length) return null;
 
   if (REDUCED) {
@@ -121,137 +120,25 @@ export function initReveals(root = document) {
     return null;
   }
 
-  const io = keepObserver(new IntersectionObserver(
-    (entries) => {
-      for (const e of entries) {
-        if (!e.isIntersecting) continue;
-        const el = e.target;
-        el.classList.add('is-in');
-        if (el.hasAttribute('data-scramble')) scramble(el);
-        io.unobserve(el);
-      }
-    },
-    // Fire a little before the element's edge, so things are already moving
-    // by the time they are properly in view.
-    { threshold: 0.12, rootMargin: '0px 0px -8% 0px' }
-  ));
+  const io = keepObserver(new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      const el = e.target;
+      el.classList.add('is-in');
+      if (el.hasAttribute('data-scramble')) scramble(el);
+      io.unobserve(el);
+      // Drop the compositor hint once the one-shot animation is done. Leaving
+      // will-change on ~30 elements for the life of the page is the exact
+      // antipattern the spec warns about.
+      setTimeout(() => { el.style.willChange = 'auto'; }, 1100);
+    }
+  }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' }));
 
   targets.forEach((el) => io.observe(el));
   return io;
 }
 
-/* ---------------------------------------------------------------- cursor --- */
-/* A grid cell that follows the pointer.
-
-   The viewport is divided into near-square cells of roughly TARGET_CELL
-   pixels. The highlight is placed at `col * cellW, row * cellH` and sized
-   `cellW x cellH` — i.e. it occupies the exact bounds of the cell the pointer
-   is inside, so it snaps cell to cell and its edges always align. Cell size
-   is derived from a target rather than a fixed column count, so cells stay
-   near-square instead of stretching with the viewport's aspect ratio.
-
-   Two hairlines track the cell's own top and left edges, which makes the
-   underlying grid readable rather than merely implied.
-
-   Over a small interactive target the cell leaves the grid and takes that
-   element's bounding box, so the highlight reads as "this is what you are
-   about to click". Large targets (rows, cards) are skipped — they have their
-   own hover treatment, and a highlight that big stops meaning anything.
-
-   Nothing here scales with pointer speed. Sizing the box by speed is what
-   breaks the alignment: the box ends up centred near a grid point at an
-   arbitrary size, lining up with nothing. */
-
-const TARGET_CELL = 78;          // px; cells land near-square around this
-const LOCK_SEL = 'a, button, input, textarea, select, .dot';
-const LOCK_MAX = 560;            // px; wider than this, stay on the grid
-
-export function initCursor() {
-  if (REDUCED || window.matchMedia('(hover: none), (pointer: coarse)').matches) return null;
-
-  const root = document.getElementById('cur');
-  const cell = document.getElementById('curCell');
-  if (!root || !cell) return null;
-
-  const hair = { h: root.querySelector('.cur__h'), v: root.querySelector('.cur__v') };
-  const trail = [...root.querySelectorAll('.cur__trail')];
-
-  let cols = 1, rows = 1, cellW = TARGET_CELL, cellH = TARGET_CELL;
-
-  function measure() {
-    cols = Math.max(1, Math.round(innerWidth / TARGET_CELL));
-    rows = Math.max(1, Math.round(innerHeight / TARGET_CELL));
-    cellW = innerWidth / cols;
-    cellH = innerHeight / rows;
-  }
-  measure();
-  addEventListener('resize', measure, { passive: true });
-
-  // Fractional geometry is fine: only a handful of cells are ever drawn, so
-  // there is no tiling for a rounding seam to show up in.
-  const box = (el, x, y, w, h) => {
-    el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-    el.style.width = `${w}px`;
-    el.style.height = `${h}px`;
-  };
-
-  let px = -1000, py = -1000;
-  let col = -1, row = -1;
-  let slot = 0;
-  let lock = null;
-
-  addEventListener('pointermove', (e) => {
-    px = e.clientX;
-    py = e.clientY;
-
-    const hit = e.target?.closest?.(LOCK_SEL) || null;
-    lock = hit && hit.getBoundingClientRect().width <= LOCK_MAX ? hit : null;
-
-    if (!document.body.classList.contains('pointer-live')) {
-      document.body.classList.add('pointer-live');
-    }
-  }, { passive: true });
-
-  return function step() {
-    if (lock && lock.isConnected) {
-      const r = lock.getBoundingClientRect();
-      root.classList.add('is-locked');
-      box(cell, r.left, r.top, r.width, r.height);
-      hair.h.style.transform = `translate3d(0, ${r.top}px, 0)`;
-      hair.v.style.transform = `translate3d(${r.left}px, 0, 0)`;
-      return;
-    }
-
-    root.classList.remove('is-locked');
-
-    const c = Math.min(cols - 1, Math.max(0, Math.floor(px / cellW)));
-    const r = Math.min(rows - 1, Math.max(0, Math.floor(py / cellH)));
-    const x = c * cellW;
-    const y = r * cellH;
-
-    box(cell, x, y, cellW, cellH);
-    hair.h.style.transform = `translate3d(0, ${y}px, 0)`;
-    hair.v.style.transform = `translate3d(${x}px, 0, 0)`;
-
-    if (c !== col || r !== row) {
-      // Stamp the cell just vacated, then let CSS fade it out in steps.
-      if (col >= 0 && trail.length) {
-        const t = trail[slot];
-        slot = (slot + 1) % trail.length;
-        box(t, col * cellW, row * cellH, cellW, cellH);
-        t.style.opacity = '0.5';
-        void t.offsetWidth;         // restart the transition from 0.5
-        t.style.opacity = '0';
-      }
-      col = c;
-      row = r;
-    }
-  };
-}
-
 /* -------------------------------------------------------------- parallax --- */
-/* Photos drift against the scroll. The image is pre-scaled 1.14 in CSS so
-   there is overflow to move into and no empty edge appears. */
 
 export function initParallax() {
   const items = [...document.querySelectorAll('[data-parallax]')].map((el) => ({
@@ -266,7 +153,6 @@ export function initParallax() {
     for (const it of items) {
       const box = it.el.getBoundingClientRect();
       if (box.bottom < -200 || box.top > vh + 200) continue;
-      // -1 below the fold .. +1 above it
       const mid = (box.top + box.height / 2 - vh / 2) / vh;
       it.img.style.transform = `translate3d(0, ${(-mid * it.amt * 100).toFixed(2)}px, 0) scale(1.14)`;
     }
@@ -282,8 +168,7 @@ export function initRail(onProgress) {
     const max = document.documentElement.scrollHeight - innerHeight;
     const p = max > 0 ? clamp01(scrollY / max) : 0;
     if (fill) fill.style.transform = `scaleX(${p})`;
-    // Hero fade is driven off its own height, not total page progress.
-    onProgress?.(clamp01(scrollY / (innerHeight * 0.9)));
+    onProgress?.(p);
   };
 }
 
@@ -293,30 +178,35 @@ export function initRail(onProgress) {
 
 export function initMarquee() {
   const track = document.getElementById('marquee');
-  if (!track) return;
+  if (!track || track.dataset.doubled) return;
   track.innerHTML += track.innerHTML;
+  track.dataset.doubled = '1';
 }
 
 /* -------------------------------------------------------------- magnetic --- */
-/* Buttons lean toward the cursor while it is near them. */
+/* Buttons lean toward the cursor while it is near them. The easing back out
+   lives in CSS — `.btn` transitions transform, so pointerleave releases
+   rather than snapping. */
 
 export function initMagnetic(root = document) {
-  if (REDUCED) return;
+  if (REDUCED || COARSE) return;
 
-  for (const el of root.querySelectorAll('.btn')) {
+  for (const el of root.querySelectorAll('[data-magnetic]')) {
     el.addEventListener('pointermove', (e) => {
       const b = el.getBoundingClientRect();
       const dx = (e.clientX - (b.left + b.width / 2)) / b.width;
       const dy = (e.clientY - (b.top + b.height / 2)) / b.height;
-      el.style.transform = `translate3d(${dx * 9}px, ${dy * 9}px, 0)`;
+      el.style.setProperty('--mx', `${dx * 7}px`);
+      el.style.setProperty('--my', `${dy * 7}px`);
     });
-    el.addEventListener('pointerleave', () => { el.style.transform = ''; });
+    el.addEventListener('pointerleave', () => {
+      el.style.setProperty('--mx', '0px');
+      el.style.setProperty('--my', '0px');
+    });
   }
 }
 
 /* ---------------------------------------------------- smooth scroll to id --- */
-/* Used by the nav. Native smooth behaviour where it is allowed, instant when
-   the visitor asked for reduced motion. */
 
 export function scrollToId(id) {
   const el = document.getElementById(id);
@@ -326,24 +216,20 @@ export function scrollToId(id) {
 }
 
 /* ------------------------------------------------------------- rAF driver --- */
-/* One loop for every per-frame effect. Steps that only depend on scroll are
-   skipped on frames where neither scroll nor pointer moved. */
+/* One loop for every per-frame effect.
+
+   Every step runs every frame. Gating on "did scroll or pointer move" is
+   tempting but wrong: the cursor drop eases toward the pointer for many
+   frames after the last pointermove, and skipping those strands it. */
 
 export function startLoop(steps) {
   const live = steps.filter(Boolean);
   if (!live.length) return;
 
-  // Every step runs every frame. Gating on "did scroll or pointer move" is
-  // tempting but wrong here: the cursor ring eases toward the pointer for
-  // many frames after the last pointermove, and skipping those leaves it
-  // stranded. The work is a few transform writes, so it is not worth the bug.
   function frame() {
     requestAnimationFrame(frame);
     if (document.hidden) return;
     for (const s of live) s();
   }
-
   requestAnimationFrame(frame);
 }
-
-export { REDUCED };

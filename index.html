@@ -6,53 +6,39 @@
 <title>Aryan Kochhar — AI agents, RAG pipelines, and a non-negotiable coffee order</title>
 <meta name="description" content="Arry — final-year AI/ML student building agentic systems and RAG pipelines that chain tools together to actually get things done.">
 <meta name="author" content="Aryan Kochhar">
-<meta name="theme-color" content="#fbf3ea">
+<!-- Kept in step with the active roast by js/theme.js. -->
+<meta name="theme-color" content="#fff4e6">
 
+<!-- og:image MUST be an absolute URL — scrapers do not resolve relative paths,
+     and a relative one is why link previews came up blank. Change the origin
+     here if the site moves off GitHub Pages. -->
 <meta property="og:type" content="website">
-<meta property="og:title" content="Aryan Kochhar — AI agents & RAG pipelines">
+<meta property="og:url" content="https://aryan-kochhar.github.io/website-testing/">
+<meta property="og:title" content="Aryan Kochhar — AI agents &amp; RAG pipelines">
 <meta property="og:description" content="I build AI agents and RAG pipelines for a living, and I'm pretty relaxed about most everything else — except my coffee order.">
-<meta property="og:image" content="assets/arry-portrait.webp">
+<meta property="og:image" content="https://aryan-kochhar.github.io/website-testing/assets/arry-portrait.webp">
 <meta name="twitter:card" content="summary_large_image">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- Variable axes on purpose: the scroll-driven weight shifts need a real
-     wght axis, not a set of static cuts. -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,200..800;1,200..800&family=Lora:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@300..600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=JetBrains+Mono:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="css/style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#9749;</text></svg>">
 </head>
 <body>
 
-<!-- brewing… kept from the original site -->
 <div class="loader" id="loader">
   <div>
-    <div class="loader__cup">
-      <span class="loader__cup-steam"></span>
-      <span class="loader__cup-steam"></span>
-      <span class="loader__cup-steam"></span>
-      <span class="loader__cup-handle"></span>
-      <div class="loader__cup-body"><div class="loader__fill"></div></div>
-    </div>
-    <div class="loader__label">brewing…</div>
+    <div class="loader__word">brewing…</div>
+    <div class="loader__bar"><i></i></div>
   </div>
 </div>
 
-<div class="paper-tex" aria-hidden="true"></div>
 <div class="grain" aria-hidden="true"></div>
 <div class="curtain" id="curtain" aria-hidden="true"></div>
 
 <div class="scroll-rail" aria-hidden="true"><div class="scroll-rail__fill" id="rail"></div></div>
-<div class="cur" id="cur" aria-hidden="true">
-  <span class="cur__h"></span>
-  <span class="cur__v"></span>
-  <span class="cur__trail"></span><span class="cur__trail"></span>
-  <span class="cur__trail"></span><span class="cur__trail"></span>
-  <span class="cur__cell" id="curCell"></span>
-</div>
-<div class="work-peek" id="peek" aria-hidden="true"><img alt="" id="peekImg"></div>
-
-<div class="quote-bubble" id="quote" role="status" aria-live="polite"></div>
+<div class="work-peek" id="peek" aria-hidden="true"><img alt="" id="peekImg" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="></div>
 
 <nav class="nav">
   <a class="nav__mark" href="#/" data-route aria-label="Aryan Kochhar — home"><span class="nav__mark-full">Aryan Kochhar</span><span class="nav__mark-short" aria-hidden="true">Arry</span></a>
@@ -62,33 +48,29 @@
     <button class="nav__link" data-goto="demos">Demos</button>
     <button class="nav__link" data-goto="about">About</button>
     <button class="nav__link" data-goto="contact">Contact</button>
-    <button class="cup" id="cup" aria-label="Pour another coffee">
-      <span class="cup__steam"></span>
-      <span class="cup__steam"></span>
-      <span class="cup__steam"></span>
-      <span class="cup__body"></span>
-    </button>
   </div>
 </nav>
+
+<div class="roasts" id="roasts" role="group" aria-label="Pick a roast"></div>
 
 <!-- =================================================== the long scroll === -->
 <main class="shell" id="home">
 
   <section class="hero" id="top">
-    <canvas class="hero__canvas" id="fluid" aria-hidden="true"></canvas>
+    <canvas class="hero__canvas" id="scene" aria-hidden="true"></canvas>
     <div class="hero__inner">
       <div class="hero__badges r-fade">
         <span class="badge">☕ Chennai, India</span>
-        <span class="badge"><span class="badge__dot"></span>Open to opportunities</span>
+        <span class="badge badge--hot"><span class="badge__dot"></span>caffeinated &amp; available</span>
       </div>
-      <h1 class="hero__title" data-split>Hi, I'm <em>Arry</em>.</h1>
+      <h1 class="hero__title">Hi, I'm <em class="wob">Arry</em>.</h1>
       <p class="hero__lede r-up">I build AI agents and RAG pipelines for a living, and I'm pretty relaxed about most everything else — except my coffee order, which comes non-negotiable.</p>
       <div class="hero__cta r-up">
-        <button class="btn btn--solid" data-goto="work">See my work <span class="btn__arrow">→</span></button>
-        <button class="btn btn--ghost" data-goto="contact">Say hi</button>
+        <button class="btn btn--solid" data-magnetic data-goto="work">See my work <span class="btn__arrow">→</span></button>
+        <button class="btn btn--ghost" data-magnetic data-goto="contact">Say hi</button>
       </div>
     </div>
-    <div class="hero__scrollcue" aria-hidden="true">Scroll</div>
+    <div class="hero__scrollcue" aria-hidden="true">keep scrolling, it gets weirder</div>
   </section>
 
   <div class="marquee" aria-hidden="true">
@@ -125,7 +107,7 @@
 
   <section class="section" id="work">
     <div class="wrap">
-      <div class="kicker r-fade">☕ Fresh off the brew</div>
+      <div class="kicker r-fade">☕ fresh off the brew</div>
       <h2 class="h-display r-up">Things I've <em>built</em></h2>
       <p class="lede r-up">Mostly agentic AI and RAG systems — with the occasional detour into 3D cities and OCR.</p>
       <div class="work-list" id="workList"></div>
@@ -134,26 +116,29 @@
 
   <section class="section section--reel" id="demos">
     <div class="wrap">
-      <div class="kicker r-fade">Watch it run</div>
+      <div class="kicker r-fade">watch it run</div>
       <h2 class="h-display r-up">The <em>demos</em></h2>
-      <p class="lede r-up" style="margin-bottom:38px">Real runs, screen-recorded — not mockups. Keep scrolling; they move sideways.</p>
+      <p class="lede r-up" style="margin-bottom:34px">Real runs, screen-recorded — not mockups. Keep scrolling; they move sideways.</p>
     </div>
     <div class="reel" id="reel"></div>
   </section>
 
-  <!-- Dark section: the contrast lift the old site never had. -->
-  <section class="section section--dark inverted" id="about">
+  <section class="section section--raised" id="about">
     <div class="wrap">
-      <div class="kicker r-fade">The person behind the code</div>
+      <div class="kicker r-fade">the person behind the code</div>
       <h2 class="h-display r-up">A bit about <em>me</em></h2>
-      <div class="about-grid" style="margin-top:44px">
+      <div class="about-grid" style="margin-top:40px">
         <div class="about-copy">
           <p class="r-up">I'm a final-year AI/ML student at Vellore Institute of Technology (CGPA 9.27, if that matters to you), building agentic systems and RAG pipelines that chain tools together to actually get things done — not just answer questions.</p>
           <p class="r-up">Last summer I interned at WE Excel Software, where I built an OCR pipeline for HR document processing and tuned retrieval for a RAG-based HR chatbot. Outside of internships, I'm usually deep in a side project — teaching an agent to backtest trading strategies, or turning a text prompt into a whole 3D city.</p>
           <div class="aside-note r-up">
-            <span class="aside-note__mark">☕</span>
-            <span>When I'm not at my desk, I'm probably making another cup of coffee, or sidequesting with my girlfriend and friends (interpersonal skills example lol) — usually both are happening at once.</span>
+            <span class="aside-note__mark" data-roast-icon></span>
+            <span>When I'm not at my desk, I'm probably making another cup of coffee, or sidequesting with my girlfriend and friends <b>(interpersonal skills example lol)</b> — usually both are happening at once.</span>
           </div>
+          <button class="pour" id="pour" data-magnetic>
+            <span data-roast-icon></span> pour one <span class="pour__n" id="pourN">0</span>
+          </button>
+          <span class="quote-bubble" id="quote" role="status" aria-live="polite"></span>
         </div>
         <div class="photo-frame photo-frame--tall r-clip" data-parallax="0.12">
           <img src="assets/arry-about.jpg" alt="Aryan Kochhar" loading="lazy" decoding="async">
@@ -209,28 +194,34 @@
           <img src="assets/arry-portrait.webp" alt="Aryan Kochhar" loading="lazy" decoding="async">
         </div>
         <div>
-          <div class="kicker r-fade">Get in touch</div>
+          <div class="kicker r-fade">get in touch</div>
           <h2 class="h-display r-up" style="margin-bottom:0">Let's <em>talk</em></h2>
         </div>
       </div>
-      <p class="lede r-up" style="margin-bottom:34px">Drop me a line — I read everything, and I reply faster than I probably should.</p>
+      <p class="lede r-up" style="margin-bottom:30px">Drop me a line — I read everything, and I reply faster than I probably should.</p>
 
       <a class="contact-mail r-up" href="mailto:aryankochhar2005@gmail.com">aryankochhar2005@gmail.com</a>
 
+      <!-- novalidate, and the handler in app.js does the checking so the
+           messages match the rest of the page. Without that handler the
+           `required` attributes below would be decorative. -->
       <form class="form r-up" id="contactForm" novalidate>
         <div class="field">
           <label for="f-name">Your name</label>
           <input id="f-name" name="name" type="text" autocomplete="name" required>
+          <span class="field__err">I'd like to know who I'm talking to.</span>
         </div>
         <div class="field">
           <label for="f-email">Your email</label>
           <input id="f-email" name="email" type="email" autocomplete="email" required>
+          <span class="field__err">That doesn't look like an email address.</span>
         </div>
         <div class="field">
           <label for="f-msg">What's up?</label>
           <textarea id="f-msg" name="message" rows="4" required></textarea>
+          <span class="field__err">Say something — anything.</span>
         </div>
-        <button class="btn btn--solid" type="submit" style="margin-top:26px; justify-self:start">
+        <button class="btn btn--solid" type="submit" data-magnetic style="margin-top:10px; justify-self:start">
           Send it over <span class="btn__arrow">→</span>
         </button>
       </form>
@@ -255,7 +246,12 @@
 </footer>
 
 <noscript>
-  <style>.loader{display:none}.r-up,.r-fade,.r-clip{opacity:1;transform:none;clip-path:none}</style>
+  <style>
+    .loader { display: none; }
+    .r-up, .r-fade, .r-clip { opacity: 1; transform: none; }
+    .r-clip::after { display: none; }
+    .roasts { display: none; }
+  </style>
 </noscript>
 
 <script type="module" src="js/app.js"></script>
