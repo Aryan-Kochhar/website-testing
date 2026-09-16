@@ -173,14 +173,59 @@ export function initRail(onProgress) {
 }
 
 /* --------------------------------------------------------------- marquee --- */
-/* The CSS animation translates the track by -50%, which only loops seamlessly
-   if the content is duplicated exactly once. */
+/* The content is duplicated exactly once, so the track can be wrapped at half
+   its width and the seam never shows.
+
+   Driven from JS rather than by a CSS animation, because the whole point is
+   that scrolling pushes it: flick down and it runs away from you, flick up
+   and it stalls and briefly reverses. A CSS animation can only have its
+   duration poked at, which reads as stuttering rather than as momentum. */
 
 export function initMarquee() {
   const track = document.getElementById('marquee');
-  if (!track || track.dataset.doubled) return;
+  if (!track || track.dataset.doubled) return null;
+
   track.innerHTML += track.innerHTML;
   track.dataset.doubled = '1';
+  if (REDUCED) return null;
+
+  track.style.animation = 'none';       // JS owns the transform from here
+
+  const DRIFT = 46;                     // px/sec at rest
+  let half = 0, offset = 0, vel = 0;
+  let lastY = scrollY, last = performance.now();
+  let hovering = false;
+
+  const measure = () => { half = track.scrollWidth / 2; };
+  measure();
+  addEventListener('resize', measure, { passive: true });
+  addEventListener('load', measure);    // widths settle once fonts land
+
+  const shell = track.parentElement;
+  shell?.addEventListener('pointerenter', () => { hovering = true; });
+  shell?.addEventListener('pointerleave', () => { hovering = false; });
+
+  return function step() {
+    const now = performance.now();
+    const dt = Math.min(now - last, 60) / 1000;
+    last = now;
+
+    const dy = scrollY - lastY;
+    lastY = scrollY;
+
+    // Smooth the raw per-frame scroll delta so a trackpad flick reads as one
+    // shove rather than as noise.
+    vel += (dy * 0.9 - vel) * 0.14;
+
+    offset -= (hovering ? 0 : DRIFT * dt) + vel;
+
+    if (half > 0) {
+      // Wrap both ways — scrolling up can push the offset positive.
+      while (offset <= -half) offset += half;
+      while (offset > 0) offset -= half;
+    }
+    track.style.transform = `translate3d(${offset.toFixed(2)}px, 0, 0)`;
+  };
 }
 
 /* -------------------------------------------------------------- magnetic --- */

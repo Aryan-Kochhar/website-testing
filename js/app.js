@@ -223,9 +223,10 @@ function renderDetail(id) {
         </button>
         <div class="kicker r-fade">Project</div>
         <h1 class="detail-title" data-scramble>${esc(p.name)}</h1>
-        <div class="work-row__tags r-fade" style="margin-bottom:8px">
+        <div class="work-row__tags r-fade" style="margin-bottom:18px">
           ${p.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}
         </div>
+        <p class="lede r-up">${esc(p.short)}</p>
         ${shots ? `<div class="demo-stack">${shots}</div>` : ''}
         <p class="detail-body r-up">${esc(p.long)}</p>
         <a class="btn btn--solid" data-magnetic href="${esc(p.url)}" target="_blank" rel="noopener">
@@ -463,7 +464,7 @@ function boot() {
 
   renderWorkList();
   renderReel();
-  initMarquee();
+  const marqueeStep = initMarquee();
   initForm();
   initPour(scene);
   initKonami();
@@ -484,6 +485,7 @@ function boot() {
     initCursor(),
     initParallax(),
     initReelPin(),
+    marqueeStep,
     initRail((p) => scene?.setScroll?.(p)),
     scene.step,
   ]);

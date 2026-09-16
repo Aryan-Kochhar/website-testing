@@ -132,7 +132,42 @@ export function initScene(canvas) {
     tmy = (e.clientY / innerHeight) * 2 - 1;
   }, { passive: true });
 
-  const st = { scroll: 0, stir: 0 };
+  const st = { scroll: 0, stir: 0, spin: 0, spinVel: 0 };
+
+  /* Grab the cup and throw it.
+
+     The canvas sits behind .hero__inner, so a drag that starts on the copy
+     hits the copy and never reaches here — only the empty right-hand side is
+     grabbable, which is exactly where the cup is. `setPointerCapture` keeps
+     the throw alive if the pointer leaves the canvas mid-drag. */
+  let dragging = false, grabX = 0, lastDX = 0;
+
+  canvas.addEventListener('pointerdown', (e) => {
+    dragging = true;
+    grabX = e.clientX;
+    lastDX = 0;
+    st.spinVel = 0;
+    canvas.setPointerCapture(e.pointerId);
+    canvas.classList.add('is-grabbed');
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    lastDX = (e.clientX - grabX) * 0.012;
+    grabX = e.clientX;
+    st.spin += lastDX;
+  });
+
+  const endDrag = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    // Hand the last frame's movement over as momentum.
+    st.spinVel = lastDX * 22;
+    canvas.releasePointerCapture?.(e.pointerId);
+    canvas.classList.remove('is-grabbed');
+  };
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
 
   const rot = (p, rx, ry) => {
     let [x, y, z] = p;
@@ -178,6 +213,13 @@ export function initScene(canvas) {
     my += (tmy - my) * 0.06;
     st.stir *= Math.pow(0.3, dt);
 
+    // Momentum from a throw, bleeding off against an imaginary saucer.
+    if (!dragging) {
+      st.spin += st.spinVel * dt;
+      st.spinVel *= Math.pow(0.12, dt);
+      if (Math.abs(st.spinVel) < 0.001) st.spinVel = 0;
+    }
+
     ctx.clearRect(0, 0, W, H);
 
     // Beside the copy where there is room; below it when there isn't.
@@ -186,7 +228,7 @@ export function initScene(canvas) {
     const ox = W * (wide ? 0.73 : 0.5);
     const oy = H * (wide ? 0.5 : 0.78);
 
-    const ry = t * 0.32 + st.scroll * 5.2 + st.stir * 2.4 + mx * 0.5;
+    const ry = t * 0.32 + st.scroll * 5.2 + st.stir * 2.4 + st.spin + mx * 0.5;
     const rx = -0.22 + my * 0.28 + st.scroll * 0.6;
 
     for (const b of beans) {

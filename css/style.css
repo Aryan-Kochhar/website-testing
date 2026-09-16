@@ -220,6 +220,9 @@ a { color: var(--shock); text-decoration: none; }
 .hero__canvas {
   position: absolute; inset: 0;
   width: 100%; height: 100%; z-index: 0;
+  /* The cup is draggable. pan-y keeps vertical scrolling working on touch
+     while letting a horizontal drag spin it. */
+  touch-action: pan-y;
   -webkit-mask-image: linear-gradient(105deg, transparent 18%, #000 54%);
           mask-image: linear-gradient(105deg, transparent 18%, #000 54%);
 }
@@ -360,12 +363,13 @@ a { color: var(--shock); text-decoration: none; }
   border-top: 2px solid var(--stamp); border-bottom: 2px solid var(--stamp);
   padding: 14px 0; user-select: none;
 }
+/* JS drives the transform (see initMarquee) so scroll velocity can push it.
+   The keyframes below are the no-JS / reduced-motion fallback. */
 .marquee__track {
   display: flex; width: max-content; gap: 44px;
   animation: marqueeRun 26s linear infinite;
   will-change: transform;
 }
-.marquee:hover .marquee__track { animation-play-state: paused; }
 .marquee__item {
   display: flex; align-items: center; gap: 44px;
   font-weight: 800; font-size: clamp(18px, 2.2vw, 30px);
@@ -540,12 +544,17 @@ a { color: var(--shock); text-decoration: none; }
 
 .demo-stack { display: flex; flex-direction: column; gap: clamp(24px, 4vw, 42px); margin: 34px 0; }
 .demo { position: relative; }
+/* Detail figures show the whole image at its own proportions. Forcing 16/10
+   here is what cropped the portrait Streamlit shots (1280x1296) down to a
+   letterbox slice. The reel still crops, because those are thumbnails. */
 .demo .demo__media {
-  width: 100%; height: auto; aspect-ratio: 16 / 10;
+  width: 100%; height: auto;
+  object-fit: contain;
   border: 2px solid var(--edge);
   box-shadow: var(--pop-shadow);
   background: var(--bg2);
 }
+.demo video.demo__media { aspect-ratio: 16 / 10; object-fit: cover; }
 .demo__cap {
   font-family: var(--mono); font-size: 11px; line-height: 1.6;
   color: var(--muted); padding-top: 10px;

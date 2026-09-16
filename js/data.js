@@ -1,65 +1,16 @@
-/* Content. Every word here is Arry's — the site is a shell around it. */
+/* Content. Every word here is Arry's — the site is a shell around it.
 
-export const PROFILE = {
-  name: 'Aryan Kochhar',
-  short: 'Arry',
-  location: 'Chennai, India',
-  status: 'Open to opportunities',
-  tagline:
-    "I build AI agents and RAG pipelines for a living, and I'm pretty relaxed about most everything else — except my coffee order, which comes non-negotiable.",
-  email: 'aryankochhar2005@gmail.com',
-  footerSignature: 'Arry 💜 Rads',
-  socials: [
-    { label: 'Email', url: 'mailto:aryankochhar2005@gmail.com' },
-    { label: 'GitHub', url: 'https://github.com/Aryan-Kochhar' },
-    { label: 'LinkedIn', url: 'https://linkedin.com/in/aryan-kochhar' },
-    { label: 'X', url: 'https://x.com/AryanKochhar2' },
-    { label: 'Instagram', url: 'https://instagram.com/_aryankochhar' },
-  ],
-};
+   The home scroll's copy lives in index.html as real markup, not here: it has
+   to survive with JS off and be readable to crawlers. This file holds only
+   what is rendered at runtime — the project index, the detail pages, and the
+   coffee button.
 
-export const FOCUS_AREAS = [
-  { mark: '01', title: 'Agentic Systems', blurb: 'Agents that chain tools, not just answer questions.' },
-  { mark: '02', title: 'RAG & Retrieval', blurb: 'Grounding LLMs in real data, reliably.' },
-  { mark: '03', title: 'Quant Research', blurb: 'Where finance meets machine learning.' },
-];
-
-export const ABOUT = {
-  kicker: 'The person behind the code',
-  paras: [
-    "I'm a final-year AI/ML student at Vellore Institute of Technology (CGPA 9.27, if that matters to you), building agentic systems and RAG pipelines that chain tools together to actually get things done — not just answer questions.",
-    "Last summer I interned at WE Excel Software, where I built an OCR pipeline for HR document processing and tuned retrieval for a RAG-based HR chatbot. Outside of internships, I'm usually deep in a side project — teaching an agent to backtest trading strategies, or turning a text prompt into a whole 3D city.",
-  ],
-  aside:
-    "When I'm not at my desk, I'm probably making another cup of coffee, or sidequesting with my girlfriend and friends (interpersonal skills example lol) — usually both are happening at once.",
-  education: [
-    {
-      title: 'B.Tech, Computer Science (AI & ML) — VIT',
-      meta: 'Aug 2023 – Jul 2027 · CGPA 9.27',
-    },
-  ],
-  experience: [
-    {
-      title: 'AI/ML Intern — WE Excel Software Pvt. Ltd.',
-      meta: 'June 2025 · On-site',
-      points: [
-        'Built an OCR pipeline extracting data from Aadhaar & PAN cards for an internal HRMS.',
-        'Tuned retrieval settings for a RAG-based HR chatbot.',
-        'Explored web scraping, automation and API integration.',
-      ],
-    },
-  ],
-  skillGroups: [
-    { title: 'Languages', items: 'Python, C, C++, Java, SQL' },
-    { title: 'AI / ML', items: 'NumPy, Pandas, OpenCV, scikit-learn, LangChain, RAG' },
-    { title: 'Web', items: 'HTML, CSS, JavaScript' },
-    { title: 'Tools', items: 'FastAPI, REST APIs, MongoDB Atlas, Redis, MCP, Ollama, Git' },
-  ],
-  certifications:
-    'AI Foundations Associate (Oracle) · Intro to Model Context Protocol (Anthropic) · Generative AI (LinkedIn)',
-  published:
-    '"Nonlinear Balance Sheet Fragility and the Prediction of Short-Horizon Liquidity Stress" — under review, Computational Economics (Springer). First author.',
-};
+   There used to be PROFILE / FOCUS_AREAS / ABOUT exports duplicating the
+   home scroll's copy. Nothing imported them, so editing a date or the CGPA
+   here changed nothing on the page while looking like it should. Removed
+   rather than wired up, because rendering the home scroll from JS would cost
+   the no-JS and crawler behaviour above. index.html is the single source for
+   that copy. */
 
 export const PROJECTS = [
   {
@@ -106,8 +57,10 @@ export const PROJECTS = [
     demos: [
       { type: 'video', src: 'assets/demos/architech/city.webm',      poster: 'assets/demos/architech/city.webp',   caption: 'A text prompt becoming a validated city layout' },
       { type: 'video', src: 'assets/demos/architech/city-2.webm',    poster: 'assets/demos/architech/city-2.webp', caption: 'The validator loop rejecting and re-placing' },
-      { type: 'image', src: 'assets/demos/architech/scene-road.webp',  caption: '"two rows of buildings split by a river"' },
-      { type: 'image', src: 'assets/demos/architech/scene-park.webp',  caption: '"a square park, buildings surrounding"' },
+      { type: 'image', src: 'assets/demos/architech/scene-road.webp',    caption: '"two rows of buildings split by a river"' },
+      { type: 'image', src: 'assets/demos/architech/scene-park.webp',    caption: '"a square park, buildings surrounding"' },
+      { type: 'image', src: 'assets/demos/architech/scene-harbour.webp', caption: '"a harbour, warehouses along the quay"' },
+      { type: 'image', src: 'assets/demos/architech/scene-water.webp',   caption: '"water on all sides"' },
     ],
   },
   {
@@ -144,8 +97,11 @@ export const PROJECTS = [
       'A group-project contribution exploring learned, data-driven denoising for wireless channels — aiming to squeeze more reliability and efficiency out of 5G/IoT-style links than classical signal-processing approaches manage on their own.',
     tags: ['Python', 'Signal Processing', '5G/IoT'],
     demos: [
-      { type: 'image', src: 'assets/demos/resonance/poster.webp', caption: 'Learned vs. classical denoising, across channel conditions' },
-      { type: 'image', src: 'assets/demos/resonance/curves.webp', caption: 'Training curves' },
+      { type: 'image', src: 'assets/demos/resonance/poster.webp',    caption: 'Learned vs. classical denoising, across channel conditions' },
+      { type: 'image', src: 'assets/demos/resonance/heatmap-0.webp', caption: 'Channel estimate before and after denoising' },
+      { type: 'image', src: 'assets/demos/resonance/spectral.webp',  caption: 'Spectral view of a single sample' },
+      { type: 'image', src: 'assets/demos/resonance/ber.webp',       caption: 'Bit error rate against SNR' },
+      { type: 'image', src: 'assets/demos/resonance/curves.webp',    caption: 'Training curves' },
     ],
   },
 ];
