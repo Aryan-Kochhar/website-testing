@@ -221,6 +221,7 @@ body.pointer-live .cursor-ring { opacity: 1; }
   align-items: center;
   justify-content: space-between;
   padding: 26px var(--gutter);
+  padding-top: calc(26px + env(safe-area-inset-top, 0px));
   /* difference blending means one nav works over cream, espresso and the
      hero canvas without ever restyling it */
   mix-blend-mode: difference;
@@ -1356,7 +1357,7 @@ body.pointer-live .cursor-ring { opacity: 1; }
 @media (max-width: 640px) {
   body { font-size: 16px; }
   .hero__lede { max-width: none; }
-  .nav { padding: 18px var(--gutter); }
+  .nav { padding: 18px var(--gutter); padding-top: calc(18px + env(safe-area-inset-top, 0px)); }
 
   /* The full name plus four links plus the cup does not fit on a phone. */
   .nav__mark-full { display: none; }
