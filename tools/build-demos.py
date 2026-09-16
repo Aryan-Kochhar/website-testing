@@ -36,8 +36,39 @@ from PIL import Image, ImageSequence
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from _repo import fetch, even  # noqa: E402
 
-FF = os.environ.get('FFMPEG', 'ffmpeg')
 OUT = pathlib.Path(__file__).resolve().parent.parent / 'assets' / 'demos'
+
+
+def find_ffmpeg():
+    """$FFMPEG, then PATH, then where winget actually puts it.
+
+    winget adds ffmpeg to PATH, but only for shells started afterwards — so
+    right after installing, `ffmpeg` is on disk and still not runnable from
+    the terminal you installed it in. Looking in the package directory turns
+    that confusing failure into a non-event.
+    """
+    override = os.environ.get('FFMPEG')
+    if override:
+        return override
+
+    found = shutil.which('ffmpeg')
+    if found:
+        return found
+
+    globs = [
+        pathlib.Path(os.environ.get('LOCALAPPDATA', '')) / 'Microsoft' / 'WinGet' / 'Packages',
+        pathlib.Path(os.environ.get('ProgramFiles', '')) / 'ffmpeg',
+        pathlib.Path('C:/ffmpeg'),
+    ]
+    for root in globs:
+        if not root.is_dir():
+            continue
+        for candidate in root.glob('**/bin/ffmpeg.exe'):
+            return str(candidate)
+    return 'ffmpeg'
+
+
+FF = find_ffmpeg()
 
 MAX_SECONDS = 9      # a loop, not the whole session
 MAX_WIDTH = 1280     # only ever downscales; every source here is at or under
