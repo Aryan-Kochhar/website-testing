@@ -229,9 +229,15 @@ function renderDetail(id) {
         <p class="lede r-up">${esc(p.short)}</p>
         ${shots ? `<div class="demo-stack">${shots}</div>` : ''}
         <p class="detail-body r-up">${esc(p.long)}</p>
-        <a class="btn btn--solid" data-magnetic href="${esc(p.url)}" target="_blank" rel="noopener">
-          View source on GitHub <span class="btn__arrow">↗</span>
-        </a>
+        <div class="detail-links r-up">
+          <a class="btn btn--solid" data-magnetic href="${esc(p.url)}" target="_blank" rel="noopener">
+            View source on GitHub <span class="btn__arrow">↗</span>
+          </a>
+          ${p.watch ? `
+          <a class="btn btn--ghost" data-magnetic href="${esc(p.watch)}" target="_blank" rel="noopener">
+            Watch the demo <span class="btn__arrow">↗</span>
+          </a>` : ''}
+        </div>
       </div>
     </section>`;
 

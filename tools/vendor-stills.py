@@ -48,27 +48,68 @@ STILLS = [
     ('resonance',     'ber',           'Resonance', 'visualizations/ber_vs_snr.png'),         # never vendored
 ]
 
-_branches = {}
+# Video posters: frame 0 of each source GIF, at the GIF's NATIVE width.
+#
+# build-demos.py capped these at ANIM_W (720) along with the video itself, so
+# the poster for a 1200px GIF was thrown away at 720 and saved at q72 — as
+# little as 4 KB. The poster is what you look at until the clip scrolls into
+# view and starts, so it is worth far more than that. A single frame costs
+# almost nothing even at full size.
+POSTERS = [
+    ('quant-copilot', 'agent-run',   'Agentic-Quantitative-Research-Copilot', 'assets/02-agent-run.gif'),
+    ('quant-copilot', 'landing',     'Agentic-Quantitative-Research-Copilot', 'assets/01-landing.gif'),
+    ('quant-copilot', 'tool-stream', 'Agentic-Quantitative-Research-Copilot', 'assets/03-tool-stream.gif'),
+    ('architech',     'city',        '-ArchiTech-', 'demo/demo.gif'),
+    ('architech',     'city-2',      '-ArchiTech-', 'demo/demo2.gif'),
+    ('congestion-rl', 'intersection', 'Congestion-Control-With-RL', 'congestion-control.gif'),
+]
+
+# These repos do not agree on a default branch name — Resonance's is `final`.
+# Asking the API is the accurate way, but unauthenticated it allows only 60
+# calls an hour, and when it runs out the lookup fails silently and every
+# fetch 404s against a branch that does not exist. So: ask once, but always
+# keep fallbacks, and remember whichever branch actually served a file.
+CANDIDATE_BRANCHES = ('main', 'master', 'final')
+
+_known = {}
 
 
-def default_branch(repo):
-    """Repos here are a mix of main and master, so ask rather than guess."""
-    if repo in _branches:
-        return _branches[repo]
+def _api_default_branch(repo):
     url = f'https://api.github.com/repos/{OWNER}/{repo}'
     try:
         with urllib.request.urlopen(url, timeout=20) as r:
-            _branches[repo] = json.load(r).get('default_branch', 'main')
+            return json.load(r).get('default_branch')
     except Exception:
-        _branches[repo] = 'main'
-    return _branches[repo]
+        return None
+
+
+def _branch_order(repo):
+    if repo in _known:
+        return [_known[repo]]
+    order = []
+    api = _api_default_branch(repo)
+    if api:
+        order.append(api)
+    for c in CANDIDATE_BRANCHES:
+        if c not in order:
+            order.append(c)
+    return order
 
 
 def fetch(repo, path):
-    branch = default_branch(repo)
-    url = f'https://raw.githubusercontent.com/{OWNER}/{repo}/{branch}/{path}'
-    with urllib.request.urlopen(url, timeout=60) as r:
-        return r.read()
+    last = None
+    for branch in _branch_order(repo):
+        url = f'https://raw.githubusercontent.com/{OWNER}/{repo}/{branch}/{path}'
+        try:
+            with urllib.request.urlopen(url, timeout=60) as r:
+                data = r.read()
+            _known[repo] = branch          # remember what worked
+            return data
+        except urllib.error.HTTPError as exc:
+            if exc.code != 404:
+                raise
+            last = exc
+    raise last or RuntimeError(f'could not fetch {repo}/{path}')
 
 
 def even(n):
@@ -109,9 +150,29 @@ def main():
         total_after += after
         print(f'{proj + "/" + name:34} {len(raw)/1e6:9.2f}M {after/1e6:9.2f}M  {im.width}x{im.height}')
 
+    print('\n--- video posters (frame 0, native width) ---')
+    for proj, name, repo, path in POSTERS:
+        dest = OUT / proj / f'{name}.webp'
+        was = dest.stat().st_size if dest.exists() else 0
+        try:
+            raw = fetch(repo, path)
+            im = Image.open(io.BytesIO(raw))
+            im.seek(0)
+            frame = im.convert('RGB')
+            # Native width, only trimmed to even dimensions.
+            frame = frame.resize((even(frame.width), even(frame.height)), Image.LANCZOS)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            frame.save(dest, 'WEBP', quality=90, method=6)
+        except Exception as exc:
+            failures.append((f'{proj}/{name} poster', str(exc)))
+            print(f'{proj + "/" + name:34} {"—":>10} {"FAILED":>10}  {exc}')
+            continue
+        now = dest.stat().st_size
+        print(f'{proj + "/" + name:34} {was/1e3:9.0f}K {now/1e3:9.0f}K  {frame.width}x{frame.height}')
+
     print('-' * 74)
     if total_before:
-        print(f'{"TOTAL":34} {total_before/1e6:9.2f}M {total_after/1e6:9.2f}M')
+        print(f'{"TOTAL stills":34} {total_before/1e6:9.2f}M {total_after/1e6:9.2f}M')
 
     if failures:
         print(f'\n{len(failures)} failed:')

@@ -14,6 +14,20 @@
 
 export const PROJECTS = [
   {
+    id: 'fact-knowledge-layer',
+    name: 'Fact Knowledge Layer',
+    url: 'https://github.com/Aryan-Kochhar/fact-knowledge-layer',
+    watch: 'https://www.youtube.com/watch?v=1nwO144tIu0',
+    short:
+      'Extracts checkable facts from PDFs, anchors every one to a verbatim quote on its source page, then works out how facts from different documents relate — whether they corroborate, genuinely conflict, or only look like they conflict because they were measured over different periods, units or scopes.',
+    long:
+      'Point it at a pile of PDFs and it pulls out every checkable claim, anchoring each to the exact sentence it came from so nothing is unsourced. Then it reconciles them across documents: two reports agreeing is corroboration, two disagreeing is a contradiction, and two that only appear to disagree because one covers a quarter and the other a full year is a context conflict — which it explains rather than flags. FastAPI and SQLite behind a React frontend, extraction and reconciliation on Gemini’s free tier, and semantic similarity running locally on sentence-transformers so no tokens are spent just finding candidate pairs. On the six starter documents: 3,460 facts, every one with a located quote, 1,377 relationships, 279 API calls.',
+    tags: ['Python', 'FastAPI', 'Knowledge Graph', 'React'],
+    demos: [
+      { type: 'image', src: 'assets/demos/fact-knowledge-layer/demo-video.webp', caption: 'Three minutes: all four reconciliation cases, then a live ingest' },
+    ],
+  },
+  {
     id: 'quant-copilot',
     name: 'Quant Copilot',
     url: 'https://github.com/Aryan-Kochhar/Agentic-Quantitative-Research-Copilot',
