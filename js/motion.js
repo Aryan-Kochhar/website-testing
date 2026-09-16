@@ -141,48 +141,99 @@ export function initReveals(root = document) {
 }
 
 /* ---------------------------------------------------------------- cursor --- */
-/* Dot tracks the pointer almost exactly; the ring trails it and swells over
-   anything interactive. Both are mix-blend-mode: difference in CSS, so one
-   pair works over cream, espresso and the hero canvas. */
+/* Ported from fastrapi.in's cursor, which is the one Arry pointed at.
+
+   The mechanics that give it its character:
+   - Positions snap to a coarse grid (viewport / 24 x 12), so it moves in
+     chunky jumps instead of gliding.
+   - Block size scales with pointer speed, clamped, so a fast flick swells it.
+   - A five-cell trail marks where it just was, each cell fading on a stepped
+     timing function so it flickers out.
+   - Over anything interactive the trail starts faint and clears fast, which
+     keeps it from smearing over the thing you are about to click.
+
+   The colours are not ported: the original's lime-on-black would fight this
+   palette, so the blocks are neutral and `difference`-blended in CSS, which
+   also means they read on the cream ground and the espresso section alike. */
+
+const GRID_COLS = 24;
+const GRID_ROWS = 12;
+const BLOCK_MIN = 40;
+const BLOCK_MAX = 80;
+const TRAIL = 5;
 
 export function initCursor() {
   if (REDUCED || window.matchMedia('(hover: none), (pointer: coarse)').matches) return null;
 
-  const dot = document.getElementById('cur');
-  const ring = document.getElementById('curRing');
-  if (!dot || !ring) return null;
+  const lead = document.getElementById('curLead');
+  const trail = [...document.querySelectorAll('.cur-trail')];
+  if (!lead || !trail.length) return null;
 
-  const p = { x: innerWidth / 2, y: innerHeight / 2 };
-  const d = { ...p };
-  const r = { ...p };
+  let cellW = innerWidth / GRID_COLS;
+  let cellH = innerHeight / GRID_ROWS;
+  addEventListener('resize', () => {
+    cellW = innerWidth / GRID_COLS;
+    cellH = innerHeight / GRID_ROWS;
+  }, { passive: true });
+
+  const HOT = 'a, button, input, textarea, select, label, [data-goto], .work-row, .focus-cell, .reel__card';
+
+  let px = -1000, py = -1000;      // raw pointer
+  let size = BLOCK_MIN;
+  let lastX = px, lastY = py, lastT = performance.now();
+  let hot = false;
+  let slot = 0;                    // round-robin over the trail cells
+
+  const place = (el, x, y, s) => {
+    // Clamp so a block never hangs off the viewport and forces a scrollbar.
+    const left = Math.max(0, Math.min(Math.round(x - s / 2), Math.round(innerWidth - s)));
+    const top  = Math.max(0, Math.min(Math.round(y - s / 2), Math.round(innerHeight - s)));
+    el.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+    el.style.width = `${s}px`;
+    el.style.height = `${s}px`;
+  };
 
   addEventListener('pointermove', (e) => {
-    p.x = e.clientX;
-    p.y = e.clientY;
-    // Snap to the real position on the first event so it does not fly in
-    // from the centre of the screen.
+    const now = performance.now();
+    const dt = Math.max(1, now - lastT);
+    lastT = now;
+
+    px = e.clientX;
+    py = e.clientY;
+    const speed = (Math.hypot(px - lastX, py - lastY) / dt) * 16;
+    lastX = px; lastY = py;
+
+    size = Math.min(BLOCK_MAX, Math.max(BLOCK_MIN, BLOCK_MIN + speed * 2));
+    hot = !!e.target?.closest?.(HOT);
+
     if (!document.body.classList.contains('pointer-live')) {
-      d.x = r.x = p.x;
-      d.y = r.y = p.y;
       document.body.classList.add('pointer-live');
     }
+
+    // Stamp a trail cell at the snapped position, then let CSS fade it.
+    const cell = trail[slot];
+    slot = (slot + 1) % TRAIL;
+    place(cell, Math.round(px / cellW) * cellW, Math.round(py / cellH) * cellH, size);
+    cell.classList.toggle('is-quick', hot);
+    cell.style.opacity = hot ? '0.12' : '0.55';
+    // Restart the transition from the new opacity.
+    void cell.offsetWidth;
+    cell.style.opacity = '0';
   }, { passive: true });
 
-  const HOT = 'a, button, input, textarea, [data-goto], .work-row, .focus-cell, .dot';
-  addEventListener('pointerover', (e) => {
-    if (e.target.closest?.(HOT)) ring.classList.add('is-hot');
-  }, { passive: true });
-  addEventListener('pointerout', (e) => {
-    if (e.target.closest?.(HOT)) ring.classList.remove('is-hot');
-  }, { passive: true });
+  // The lead block steps toward the pointer rather than easing smoothly: it
+  // only commits when the snapped cell changes, which is what reads as digital.
+  let shownX = px, shownY = py;
 
   return function step() {
-    d.x = lerp(d.x, p.x, 0.62);
-    d.y = lerp(d.y, p.y, 0.62);
-    r.x = lerp(r.x, p.x, 0.16);
-    r.y = lerp(r.y, p.y, 0.16);
-    dot.style.transform = `translate3d(${d.x}px, ${d.y}px, 0)`;
-    ring.style.transform = `translate3d(${r.x}px, ${r.y}px, 0)`;
+    const snapX = Math.round(px / cellW) * cellW;
+    const snapY = Math.round(py / cellH) * cellH;
+    // Quantised follow — halfway each frame, but snapped, so it lands in 2-3
+    // visible jumps the way GSAP's steps(2) ease does in the original.
+    shownX = Math.abs(snapX - shownX) < 1 ? snapX : shownX + (snapX - shownX) * 0.5;
+    shownY = Math.abs(snapY - shownY) < 1 ? snapY : shownY + (snapY - shownY) * 0.5;
+    place(lead, shownX, shownY, size);
+    lead.style.opacity = hot ? '0.35' : '0.92';
   };
 }
 

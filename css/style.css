@@ -156,44 +156,45 @@ a { color: var(--accent); text-decoration: none; }
 }
 
 /* ------------------------------------------------------------- cursor --- */
-/* Hidden on touch and when the pointer is coarse — see the media query at
-   the end of this file. */
+/* Blocks snapped to a coarse grid, after fastrapi.in: the leading square
+   follows in visible steps and a short trail marks the cells it just left.
+   Everything is `difference`-blended and neutral, so one cursor reads on the
+   cream ground, on the espresso section and over the hero canvas — the
+   original's lime-and-blue would fight this palette.
 
-.cursor, .cursor-ring {
+   Hidden until the first pointermove, and dropped entirely for coarse
+   pointers (see the media query at the end of this file). */
+
+.cur-blocks {
   position: fixed;
-  top: 0; left: 0;
+  inset: 0;
   pointer-events: none;
   z-index: 9500;
-  border-radius: 50%;
-  mix-blend-mode: difference;
-  will-change: transform;
-  /* Hidden until the first pointermove — otherwise it sits parked in the
-     middle of the hero on load. */
   opacity: 0;
+  mix-blend-mode: difference;
 }
 
-body.pointer-live .cursor,
-body.pointer-live .cursor-ring { opacity: 1; }
+body.pointer-live .cur-blocks { opacity: 1; }
 
-.cursor {
-  width: 7px; height: 7px;
+.cur-lead, .cur-trail {
+  position: fixed;
+  top: 0; left: 0;
+  width: 40px; height: 40px;
   background: #fff;
-  margin: -3.5px 0 0 -3.5px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  will-change: transform, width, height, opacity;
 }
 
-.cursor-ring {
-  width: 38px; height: 38px;
-  margin: -19px 0 0 -19px;
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  transition: width 0.3s var(--ease), height 0.3s var(--ease),
-              margin 0.3s var(--ease), opacity 0.3s var(--ease);
+.cur-lead { opacity: 0.92; }
+
+.cur-trail {
+  opacity: 0;
+  /* stepped, not smooth — the trail should flicker out, not glide */
+  transition: opacity 2.6s steps(14);
 }
 
-.cursor-ring.is-hot {
-  width: 74px; height: 74px;
-  margin: -37px 0 0 -37px;
-  border-color: rgba(255, 255, 255, 0.55);
-}
+.cur-trail.is-quick { transition: opacity 0.5s steps(6); }
 
 /* --------------------------------------------------------------- shell --- */
 
@@ -823,6 +824,146 @@ body.pointer-live .cursor-ring { opacity: 1; }
 
 .work-peek img { width: 100%; height: 100%; object-fit: cover; }
 
+/* ---------------------------------------------------------------- reel --- */
+
+.section--reel { padding-bottom: 0; }
+
+.reel { position: relative; }
+
+/* Default: a plain horizontal scroller with snap points. Touch gets this. */
+.reel__vp { overflow: hidden; }
+
+.reel__track {
+  display: flex;
+  gap: clamp(16px, 2.4vw, 34px);
+  padding: 8px var(--gutter) clamp(60px, 9vh, 110px);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.reel__track::-webkit-scrollbar { display: none; }
+
+/* Pinned: JS sets .reel height and drives translateX off scroll position, so
+   the track must not scroll itself. */
+.reel.is-pinned .reel__vp {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  display: flex;
+  align-items: center;
+}
+
+.reel.is-pinned .reel__track {
+  overflow-x: visible;
+  scroll-snap-type: none;
+  padding-bottom: 0;
+  will-change: transform;
+}
+
+.reel__card {
+  flex: 0 0 auto;
+  width: clamp(292px, 46vw, 640px);
+  scroll-snap-align: center;
+  cursor: pointer;
+}
+
+.reel__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--bg-2);
+  border: 1px solid var(--hairline);
+  transition: transform 0.6s var(--ease), border-color 0.4s var(--ease);
+}
+
+.reel__card:hover .reel__frame,
+.reel__card:focus-visible .reel__frame {
+  transform: translateY(-6px);
+  border-color: var(--accent);
+}
+
+.demo__media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.reel__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: 16px;
+}
+
+.reel__proj {
+  font-family: var(--serif);
+  font-size: clamp(17px, 1.7vw, 21px);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--fg);
+}
+
+.reel__cap {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.55;
+  letter-spacing: 0.02em;
+  color: var(--fg-soft);
+}
+
+.reel__card--end {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+  width: clamp(230px, 26vw, 330px);
+  cursor: default;
+}
+
+.reel__endline {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(22px, 2.6vw, 34px);
+  letter-spacing: -0.02em;
+  color: var(--fg-faint);
+}
+
+/* ------------------------------------------------------- demo stack --- */
+
+.demo-stack {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(26px, 4vw, 44px);
+  margin: 38px 0;
+}
+
+.demo { position: relative; }
+
+.demo .demo__media {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  border-radius: 3px;
+  border: 1px solid var(--hairline);
+  background: var(--bg-2);
+}
+
+.demo__cap {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  color: var(--fg-faint);
+  padding-top: 12px;
+}
+
 /* ------------------------------------------------------------- reveals --- */
 /* Base states for scroll-in animation. `.is-in` is added by the observer.
    Everything is transform+opacity only, so it stays on the compositor. */
@@ -852,6 +993,11 @@ body.pointer-live .cursor-ring { opacity: 1; }
    leaves the element itself unclipped, so the observer still sees it. */
 .r-clip {
   position: relative;
+  /* Load-bearing: the ::after curtain below is inset:0 and slides to
+     translateY(-100%), which parks it directly ABOVE the element. Without
+     clipping it keeps painting there and covers whatever precedes it — on a
+     project page that was the title, tags and back link. */
+  overflow: hidden;
   transform: translateY(18px);
   transition: transform 1.05s var(--ease);
 }
@@ -1359,11 +1505,13 @@ body.pointer-live .cursor-ring { opacity: 1; }
   .hero__lede { max-width: none; }
   .nav { padding: 18px var(--gutter); padding-top: calc(18px + env(safe-area-inset-top, 0px)); }
 
-  /* The full name plus four links plus the cup does not fit on a phone. */
+  /* The full name plus five links plus the cup does not fit a phone, so the
+     name shortens and Home drops — the wordmark already goes home. */
   .nav__mark-full { display: none; }
   .nav__mark-short { display: inline; }
-  .nav__links { gap: 12px; }
-  .nav__link { font-size: 10.5px; letter-spacing: 0.08em; }
+  .nav__links { gap: 11px; }
+  .nav__link { font-size: 10px; letter-spacing: 0.06em; }
+  .nav__link[data-goto="top"] { display: none; }
   .quote-bubble {
     right: 12px;
     left: 12px;
@@ -1374,7 +1522,7 @@ body.pointer-live .cursor-ring { opacity: 1; }
 
 /* Hide the custom cursor for touch / coarse pointers, and restore the OS one. */
 @media (hover: none), (pointer: coarse) {
-  .cursor, .cursor-ring, .work-peek { display: none !important; }
+  .cur-blocks, .work-peek { display: none !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {

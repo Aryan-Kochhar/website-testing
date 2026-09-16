@@ -71,11 +71,11 @@ export const PROJECTS = [
     long:
       'Ask it something like "what’s the max drawdown of MSFT this year" and it plans its own tool calls — pulling live prices, running the quant analysis, and streaming each step (tool_call → tool_done → answer) to the frontend over WebSocket. Backed by a two-tier cache (Redis for hot queries, MongoDB Atlas for price history) and a Groq-to-local-Ollama fallback so it stays available even under rate limits.',
     tags: ['Python', 'MCP', 'RAG', 'Finance'],
-    gallery: [
-      'https://github.com/Aryan-Kochhar/Agentic-Quantitative-Research-Copilot/raw/main/assets/00-landing-hero.png',
-      'https://github.com/Aryan-Kochhar/Agentic-Quantitative-Research-Copilot/raw/main/assets/01-landing.gif',
-      'https://github.com/Aryan-Kochhar/Agentic-Quantitative-Research-Copilot/raw/main/assets/02-agent-run.gif',
-      'https://github.com/Aryan-Kochhar/Agentic-Quantitative-Research-Copilot/raw/main/assets/03-tool-stream.gif',
+    demos: [
+      { type: 'video', src: 'assets/demos/quant-copilot/agent-run.webm',    poster: 'assets/demos/quant-copilot/agent-run.webp',    caption: 'The agent planning its own tool calls' },
+      { type: 'video', src: 'assets/demos/quant-copilot/tool-stream.webm',  poster: 'assets/demos/quant-copilot/tool-stream.webp',  caption: 'tool_call → tool_done → answer, streamed over WebSocket' },
+      { type: 'video', src: 'assets/demos/quant-copilot/landing.webm',      poster: 'assets/demos/quant-copilot/landing.webp',      caption: 'Asking it for a max drawdown' },
+      { type: 'image', src: 'assets/demos/quant-copilot/hero.webp',                                                                 caption: 'Eight quant tools, exposed over MCP' },
     ],
   },
   {
@@ -87,11 +87,11 @@ export const PROJECTS = [
     long:
       'Point it at a log file and just talk to it — "what happened on the 17th" or "are there any security threats" — and it answers using RAG over your own logs, no cloud LLM required (runs on local Ollama). It auto-flags error spikes and known-bad keywords like timeout and deadlock, and ships with both a CLI and a Streamlit dashboard for browsing, filtering, and exporting.',
     tags: ['Python', 'RAG', 'MongoDB'],
-    gallery: [
-      'https://github.com/Aryan-Kochhar/LogMind---Server-Log-Analyzer/raw/main/assets/demo.png',
-      'https://github.com/Aryan-Kochhar/LogMind---Server-Log-Analyzer/raw/main/assets/Streamlit1.png',
-      'https://github.com/Aryan-Kochhar/LogMind---Server-Log-Analyzer/raw/main/assets/Streamlit2.png',
-      'https://github.com/Aryan-Kochhar/LogMind---Server-Log-Analyzer/raw/main/assets/Streamlit3.png',
+    demos: [
+      { type: 'image', src: 'assets/demos/logmind/dashboard.webp',   caption: 'Asking a log file what happened on the 17th' },
+      { type: 'image', src: 'assets/demos/logmind/streamlit-1.webp', caption: 'Anomaly flags on error spikes' },
+      { type: 'image', src: 'assets/demos/logmind/streamlit-2.webp', caption: 'Semantic search across the index' },
+      { type: 'image', src: 'assets/demos/logmind/streamlit-3.webp', caption: 'Filtering and exporting matches' },
     ],
   },
   {
@@ -103,9 +103,11 @@ export const PROJECTS = [
     long:
       'Feed it a prompt like "two rows of buildings split by a river" and a local planner LLM sketches the zones, a Groq-hosted model places exact grid coordinates, and a deterministic (no-LLM) validator checks the result for overlaps, adjacency, and symmetry — kicking it back for another pass if it fails. A RAG variant retrieves the closest hand-built layout template first, which held up far better on tricky spatial language like "surrounding" or "on both sides."',
     tags: ['Python', 'LLM Pipeline', '3D'],
-    gallery: [
-      'https://github.com/Aryan-Kochhar/-ArchiTech-/raw/main/demo/demo.gif',
-      'https://github.com/Aryan-Kochhar/-ArchiTech-/raw/main/demo/demo2.gif',
+    demos: [
+      { type: 'video', src: 'assets/demos/architech/city.webm',      poster: 'assets/demos/architech/city.webp',   caption: 'A text prompt becoming a validated city layout' },
+      { type: 'video', src: 'assets/demos/architech/city-2.webm',    poster: 'assets/demos/architech/city-2.webp', caption: 'The validator loop rejecting and re-placing' },
+      { type: 'image', src: 'assets/demos/architech/scene-road.webp',  caption: '"two rows of buildings split by a river"' },
+      { type: 'image', src: 'assets/demos/architech/scene-park.webp',  caption: '"a square park, buildings surrounding"' },
     ],
   },
   {
@@ -117,7 +119,7 @@ export const PROJECTS = [
     long:
       'Send it front and back images of an Indian Aadhaar card and it hands back structured JSON — name, DOB, gender, Aadhaar number, address, pincode, guardian info — pulled out with Tesseract OCR. Ships as a Flask API, a Flask-RESTful variant, and a bare local-file version, all sharing the same OCR core.',
     tags: ['Flask', 'OCR', 'REST API'],
-    gallery: [],
+    demos: [],
   },
   {
     id: 'congestion-rl',
@@ -128,8 +130,8 @@ export const PROJECTS = [
     long:
       'A SUMO-based intersection simulation where a Q-learning agent watches queue lengths, wait times, and vehicle density, then adjusts signal timing to keep traffic moving — while automatically clearing a path and giving right-of-way the moment it detects an emergency vehicle.',
     tags: ['Python', 'Reinforcement Learning', 'SUMO'],
-    gallery: [
-      'https://github.com/Aryan-Kochhar/Congestion-Control-With-RL/raw/main/congestion-control.gif',
+    demos: [
+      { type: 'video', src: 'assets/demos/congestion-rl/intersection.webm', poster: 'assets/demos/congestion-rl/intersection.webp', caption: 'Q-learning agent retiming signals, and yielding to an emergency vehicle' },
     ],
   },
   {
@@ -141,8 +143,9 @@ export const PROJECTS = [
     long:
       'A group-project contribution exploring learned, data-driven denoising for wireless channels — aiming to squeeze more reliability and efficiency out of 5G/IoT-style links than classical signal-processing approaches manage on their own.',
     tags: ['Python', 'Signal Processing', '5G/IoT'],
-    gallery: [
-      'https://github.com/Aryan-Kochhar/Resonance/raw/final/visualizations/summary_poster.png',
+    demos: [
+      { type: 'image', src: 'assets/demos/resonance/poster.webp', caption: 'Learned vs. classical denoising, across channel conditions' },
+      { type: 'image', src: 'assets/demos/resonance/curves.webp', caption: 'Training curves' },
     ],
   },
 ];

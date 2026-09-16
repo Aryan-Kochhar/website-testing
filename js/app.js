@@ -26,6 +26,40 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => (
   { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
 ));
 
+/* A still frame for a demo, whichever kind it is — the video poster, or the
+   image itself. Used wherever we need a thumbnail and not playback. */
+const stillOf = (demo) => (demo ? (demo.type === 'video' ? demo.poster : demo.src) : null);
+
+/* Demos are vendored WebM/WebP rather than the GIFs the project repos serve:
+   those totalled 23MB, one of them 439 frames. Videos are muted/loop/inline
+   so iOS will autoplay them, and only play while on screen. */
+function demoMedia(demo, { eager = false } = {}) {
+  if (demo.type === 'video') {
+    return `<video class="demo__media" muted loop playsinline preload="none"
+                   poster="${esc(demo.poster)}" aria-label="${esc(demo.caption)}">
+              <source src="${esc(demo.src)}" type="video/webm">
+            </video>`;
+  }
+  return `<img class="demo__media" src="${esc(demo.src)}" alt="${esc(demo.caption)}"
+               loading="${eager ? 'eager' : 'lazy'}" decoding="async">`;
+}
+
+/* Play only what is on screen. A row of six looping videos decoding at once
+   is the difference between a smooth page and a hot laptop. */
+function wireVideos(root) {
+  const vids = [...root.querySelectorAll('video.demo__media')];
+  if (!vids.length) return null;
+  const io = keepObserver(new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      const v = e.target;
+      if (e.isIntersecting) { v.play?.().catch(() => {}); }
+      else { v.pause?.(); }
+    }
+  }, { threshold: 0.25 }));
+  vids.forEach((v) => io.observe(v));
+  return io;
+}
+
 /* ------------------------------------------------------------ work index --- */
 
 function renderWorkList() {
@@ -34,7 +68,7 @@ function renderWorkList() {
 
   list.innerHTML = PROJECTS.map((p, i) => `
     <button class="work-row r-up" data-project="${esc(p.id)}"
-            ${p.gallery[0] ? `data-peek="${esc(p.gallery[0])}"` : ''}>
+            ${stillOf(p.demos[0]) ? `data-peek="${esc(stillOf(p.demos[0]))}"` : ''}>
       <span class="work-row__num">${String(i + 1).padStart(2, '0')}</span>
       <span>
         <span class="work-row__name">${esc(p.name)}</span>
@@ -79,18 +113,119 @@ function renderWorkList() {
   }
 }
 
+/* ------------------------------------------------------------------ reel --- */
+/* A horizontal demo strip. On a wide screen with motion allowed it pins and
+   tracks sideways off vertical scroll; otherwise it stays a plain horizontal
+   scroller with snap points, which is what touch wants anyway. Both paths use
+   the same markup — only `.is-pinned` differs. */
+
+function reelItems() {
+  const out = [];
+  for (const p of PROJECTS) {
+    if (!p.demos.length) continue;
+    // Videos first, then at most two per project, so no one project floods it.
+    const ranked = [...p.demos].sort((a, b) => (a.type === 'video' ? -1 : 1) - (b.type === 'video' ? -1 : 1));
+    for (const d of ranked.slice(0, 2)) out.push({ project: p, demo: d });
+  }
+  return out;
+}
+
+function renderReel() {
+  const reel = document.getElementById('reel');
+  if (!reel) return;
+
+  const items = reelItems();
+  reel.innerHTML = `
+    <div class="reel__vp">
+      <div class="reel__track" id="reelTrack">
+        ${items.map(({ project, demo }) => `
+          <article class="reel__card" data-project="${esc(project.id)}" tabindex="0"
+                   role="link" aria-label="${esc(project.name)} — ${esc(demo.caption)}">
+            <div class="reel__frame">${demoMedia(demo)}</div>
+            <div class="reel__meta">
+              <span class="reel__proj">${esc(project.name)}</span>
+              <span class="reel__cap">${esc(demo.caption)}</span>
+            </div>
+          </article>`).join('')}
+        <article class="reel__card reel__card--end">
+          <span class="reel__endline">That\u2019s the reel.</span>
+          <button class="btn btn--ghost" data-goto="work">All projects <span class="btn__arrow">\u2192</span></button>
+        </article>
+      </div>
+    </div>`;
+
+  for (const card of reel.querySelectorAll('.reel__card[data-project]')) {
+    const open = () => go(`#/p/${card.dataset.project}`);
+    card.addEventListener('click', open);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+    });
+  }
+
+  wireVideos(reel);
+  return reel;
+}
+
+/* Scroll-linked pinning. Returns a per-frame step for the shared rAF loop, or
+   null when this viewport gets the native scroller instead. */
+function initReelPin() {
+  const reel = document.getElementById('reel');
+  const track = document.getElementById('reelTrack');
+  if (!reel || !track) return null;
+
+  const wide = window.matchMedia('(min-width: 901px)');
+  // Vertical scroll consumed per pixel of sideways travel. At 1.0 the reel
+  // eats ~6 screens of scrolling; this moves it faster than the finger.
+  const PACE = 0.55;
+  let pinned = false;
+  let travel = 0;
+  let ride = 0;
+
+  function measure() {
+    pinned = wide.matches && !REDUCED;
+    reel.classList.toggle('is-pinned', pinned);
+
+    if (!pinned) {
+      reel.style.height = '';
+      track.style.transform = '';
+      travel = ride = 0;
+      return;
+    }
+    // How far the track has to slide, and therefore how much vertical scroll
+    // the section needs to consume.
+    travel = Math.max(0, track.scrollWidth - reel.clientWidth);
+    ride = travel * PACE;
+    reel.style.height = `${window.innerHeight + ride}px`;
+  }
+
+  measure();
+  window.addEventListener('resize', measure, { passive: true });
+  wide.addEventListener('change', measure);
+  // Card widths depend on loaded media; re-measure once it settles.
+  window.addEventListener('load', measure);
+
+  return function step() {
+    if (!pinned || !travel) return;
+    const box = reel.getBoundingClientRect();
+    const progress = Math.max(0, Math.min(1, -box.top / ride));
+    track.style.transform = `translate3d(${-progress * travel}px, 0, 0)`;
+  };
+}
+
 /* --------------------------------------------------------- detail page --- */
 
 function renderDetail(id) {
   const p = PROJECTS.find((x) => x.id === id);
   if (!p) return false;
 
-  const shots = p.gallery.length
-    ? `<div class="shot r-clip">
-         ${p.gallery.map((g, i) => `<img src="${esc(g)}" alt="${esc(p.name)} screenshot ${i + 1}" class="${i === 0 ? 'is-on' : ''}" loading="${i === 0 ? 'eager' : 'lazy'}" decoding="async">`).join('')}
-       </div>
-       ${p.gallery.length > 1 ? `<div class="dots">${p.gallery.map((_, i) => `<button class="dot ${i === 0 ? 'is-on' : ''}" data-i="${i}" aria-label="Screenshot ${i + 1}"></button>`).join('')}</div>` : ''}`
-    : '';
+  // Stacked figures rather than a carousel: there are at most four, they
+  // each mean something different, and a caption per demo beats dots.
+  const shots = p.demos.map((d, i) => `
+    <figure class="demo r-clip">
+      ${demoMedia(d, { eager: i === 0 })}
+      <figcaption class="demo__cap">${esc(d.caption)}</figcaption>
+    </figure>
+  `).join('');
 
   detail.innerHTML = `
     <section class="section" style="padding-top:clamp(120px,18vh,200px)">
@@ -103,7 +238,7 @@ function renderDetail(id) {
         <div class="work-row__tags r-fade" style="margin-bottom:8px">
           ${p.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}
         </div>
-        ${shots}
+        <div class="demo-stack">${shots}</div>
         <p class="detail-body r-up">${esc(p.long)}</p>
         <a class="btn btn--solid" href="${esc(p.url)}" target="_blank" rel="noopener">
           View source on GitHub <span class="btn__arrow">↗</span>
@@ -114,50 +249,7 @@ function renderDetail(id) {
 
   detail.querySelector('[data-back]').addEventListener('click', () => go('#/'));
 
-  // Gallery: fade between stacked images, auto-advance, pause once touched.
-  const imgs = [...detail.querySelectorAll('.shot img')];
-  const dots = [...detail.querySelectorAll('.dot')];
-
-  // These are hotlinked from the project repos, so any one of them can 404.
-  let broken = 0;
-  imgs.forEach((im, i) => {
-    im.addEventListener('error', () => {
-      im.classList.add('is-broken');
-      dots[i]?.remove();
-      if (++broken === imgs.length) {
-        detail.querySelector('.shot')?.remove();
-        detail.querySelector('.dots')?.remove();
-      }
-    });
-  });
-  if (imgs.length > 1) {
-    let idx = 0;
-    let timer = null;
-
-    const show = (i) => {
-      // Step past any image that 404'd, rather than fading to an empty frame.
-      let next = (i + imgs.length) % imgs.length;
-      for (let tries = 0; tries < imgs.length; tries++) {
-        if (!imgs[next].classList.contains('is-broken')) break;
-        next = (next + 1) % imgs.length;
-      }
-      idx = next;
-      imgs.forEach((im, k) => im.classList.toggle('is-on', k === idx));
-      dots.forEach((d, k) => d.classList.toggle('is-on', k === idx));
-    };
-    const play = () => { timer = setInterval(() => show(idx + 1), 4500); };
-
-    dots.forEach((d) => d.addEventListener('click', () => {
-      clearInterval(timer);
-      show(Number(d.dataset.i));
-      play();
-    }));
-
-    play();
-    // Route changes replace detail.innerHTML; without this the interval keeps
-    // ticking against detached nodes.
-    detail._cleanup = () => clearInterval(timer);
-  }
+  detail._vidIo = wireVideos(detail);
 
   detail._io = initReveals(detail);
   initMagnetic(detail);
@@ -174,7 +266,9 @@ function paint(hash) {
   detail._cleanup?.();
   detail._cleanup = null;
   releaseObserver(detail._io);
+  releaseObserver(detail._vidIo);
   detail._io = null;
+  detail._vidIo = null;
 
   if (m && renderDetail(decodeURIComponent(m[1]))) {
     home.hidden = true;
@@ -299,6 +393,7 @@ function boot() {
   hero = initFluid(document.getElementById('fluid'));
 
   renderWorkList();
+  renderReel();
   initMarquee();
   initForm();
   initCoffee(hero);
@@ -313,10 +408,12 @@ function boot() {
   }
 
   initReveals();
+  wireVideos(document.getElementById('home'));
 
   startLoop([
     initCursor(),
     initParallax(),
+    initReelPin(),
     initRail((p) => hero?.setScroll(p)),
   ]);
 
@@ -338,7 +435,7 @@ function boot() {
 
   // Mark the nav link for whichever section is currently in view.
   const links = [...document.querySelectorAll('.nav__link')];
-  const sections = ['top', 'work', 'about', 'contact'];
+  const sections = ['top', 'work', 'demos', 'about', 'contact'];
   const spy = keepObserver(new IntersectionObserver((entries) => {
     for (const e of entries) {
       if (!e.isIntersecting) continue;

@@ -43,8 +43,11 @@
 <div class="curtain" id="curtain" aria-hidden="true"></div>
 
 <div class="scroll-rail" aria-hidden="true"><div class="scroll-rail__fill" id="rail"></div></div>
-<div class="cursor" id="cur" aria-hidden="true"></div>
-<div class="cursor-ring" id="curRing" aria-hidden="true"></div>
+<div class="cur-blocks" id="curBlocks" aria-hidden="true">
+  <span class="cur-trail"></span><span class="cur-trail"></span><span class="cur-trail"></span>
+  <span class="cur-trail"></span><span class="cur-trail"></span>
+  <span class="cur-lead" id="curLead"></span>
+</div>
 <div class="work-peek" id="peek" aria-hidden="true"><img alt="" id="peekImg"></div>
 
 <div class="quote-bubble" id="quote" role="status" aria-live="polite"></div>
@@ -54,6 +57,7 @@
   <div class="nav__links">
     <button class="nav__link" data-goto="top">Home</button>
     <button class="nav__link" data-goto="work">Work</button>
+    <button class="nav__link" data-goto="demos">Demos</button>
     <button class="nav__link" data-goto="about">About</button>
     <button class="nav__link" data-goto="contact">Contact</button>
     <button class="cup" id="cup" aria-label="Pour another coffee">
@@ -124,6 +128,15 @@
       <p class="lede r-up">Mostly agentic AI and RAG systems — with the occasional detour into 3D cities and OCR.</p>
       <div class="work-list" id="workList"></div>
     </div>
+  </section>
+
+  <section class="section section--reel" id="demos">
+    <div class="wrap">
+      <div class="kicker r-fade">Watch it run</div>
+      <h2 class="h-display r-up">The <em>demos</em></h2>
+      <p class="lede r-up" style="margin-bottom:38px">Real runs, screen-recorded — not mockups. Keep scrolling; they move sideways.</p>
+    </div>
+    <div class="reel" id="reel"></div>
   </section>
 
   <!-- Dark section: the contrast lift the old site never had. -->

@@ -46,7 +46,7 @@ uniform int   uOctaves;  // fbm detail, lowered on weak hardware
 #define FOAM     vec3(0.953, 0.890, 0.808)
 #define CARAMEL  vec3(0.886, 0.686, 0.478)
 #define COPPER   vec3(0.710, 0.322, 0.184)
-#define ESPRESSO vec3(0.231, 0.129, 0.086)
+#define ESPRESSO vec3(0.157, 0.082, 0.052)
 
 mat2 rot(float a){ float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
 
@@ -140,10 +140,10 @@ void main(){
   // Light-dominant ramp: cream and foam own most of the area, copper and
   // espresso arrive as ribbons. Narrow smoothsteps give the ribbons an edge —
   // wide ones just produce a gradient.
-  vec3 albedo = mix(COPPER, CARAMEL, smoothstep(0.30, 0.46, band));
-  albedo = mix(albedo, FOAM,         smoothstep(0.44, 0.58, band));
-  albedo = mix(albedo, CREAM,        smoothstep(0.56, 0.74, band));
-  albedo = mix(ESPRESSO, albedo,     smoothstep(0.13, 0.31, band));
+  vec3 albedo = mix(COPPER, CARAMEL, smoothstep(0.44, 0.63, band));
+  albedo = mix(albedo, FOAM,         smoothstep(0.62, 0.77, band));
+  albedo = mix(albedo, CREAM,        smoothstep(0.78, 0.93, band));
+  albedo = mix(ESPRESSO, albedo,     smoothstep(0.17, 0.44, band));
 
   float diff = max(dot(n, L), 0.0);
   float spec = pow(max(dot(reflect(-L, n), V), 0.0), 42.0);
@@ -152,15 +152,15 @@ void main(){
   // hard terminator looks like plastic.
   float wrap = diff * 0.78 + 0.22;
 
-  vec3 col = albedo * (0.58 + 0.62 * wrap);
+  vec3 col = albedo * (0.44 + 0.72 * wrap);
   col += FOAM * spec * 0.68;
 
   // Cream sits proud of the coffee, so catch a rim on the ribbon edges.
   float edgeLight = pow(1.0 - abs(n.z), 1.8);
-  col += CARAMEL * edgeLight * 0.22 * smoothstep(0.40, 0.75, band);
+  col += CARAMEL * edgeLight * 0.26 * smoothstep(0.55, 0.88, band);
 
   // Warm ambient bounce from below, keeps the troughs from going flat black.
-  col += COPPER * 0.10 * (1.0 - band);
+  col += COPPER * 0.07 * (1.0 - band);
 
   // Grain in-shader, so it sits under the CSS paper texture, not on top.
   float g = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233)) + uTime * 13.0) * 43758.5453);
@@ -175,6 +175,11 @@ void main(){
   vec2  c      = uv - vec2(bias, -0.04 - narrow * 0.46);
   float vig    = smoothstep(0.34, 1.22, length(c * vec2(0.92, 1.06)));
   col = mix(col, CREAM, clamp(vig * 0.94 + narrow * 0.24, 0.0, 1.0));
+
+  // Guard the text column. The pour is rich enough now that the copper accent
+  // in the headline would otherwise sit on copper.
+  float guard = (1.0 - smoothstep(-0.60, 0.50, uv.x)) * (1.0 - narrow);
+  col = mix(col, CREAM, guard * 0.58);
 
   col = mix(CREAM, col, uIntro);
   col = mix(col, CREAM, uScroll * 0.82);
