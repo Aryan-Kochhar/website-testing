@@ -141,99 +141,111 @@ export function initReveals(root = document) {
 }
 
 /* ---------------------------------------------------------------- cursor --- */
-/* Ported from fastrapi.in's cursor, which is the one Arry pointed at.
+/* A grid cell that follows the pointer.
 
-   The mechanics that give it its character:
-   - Positions snap to a coarse grid (viewport / 24 x 12), so it moves in
-     chunky jumps instead of gliding.
-   - Block size scales with pointer speed, clamped, so a fast flick swells it.
-   - A five-cell trail marks where it just was, each cell fading on a stepped
-     timing function so it flickers out.
-   - Over anything interactive the trail starts faint and clears fast, which
-     keeps it from smearing over the thing you are about to click.
+   The viewport is divided into near-square cells of roughly TARGET_CELL
+   pixels. The highlight is placed at `col * cellW, row * cellH` and sized
+   `cellW x cellH` — i.e. it occupies the exact bounds of the cell the pointer
+   is inside, so it snaps cell to cell and its edges always align. Cell size
+   is derived from a target rather than a fixed column count, so cells stay
+   near-square instead of stretching with the viewport's aspect ratio.
 
-   The colours are not ported: the original's lime-on-black would fight this
-   palette, so the blocks are neutral and `difference`-blended in CSS, which
-   also means they read on the cream ground and the espresso section alike. */
+   Two hairlines track the cell's own top and left edges, which makes the
+   underlying grid readable rather than merely implied.
 
-const GRID_COLS = 24;
-const GRID_ROWS = 12;
-const BLOCK_MIN = 40;
-const BLOCK_MAX = 80;
-const TRAIL = 5;
+   Over a small interactive target the cell leaves the grid and takes that
+   element's bounding box, so the highlight reads as "this is what you are
+   about to click". Large targets (rows, cards) are skipped — they have their
+   own hover treatment, and a highlight that big stops meaning anything.
+
+   Nothing here scales with pointer speed. Sizing the box by speed is what
+   breaks the alignment: the box ends up centred near a grid point at an
+   arbitrary size, lining up with nothing. */
+
+const TARGET_CELL = 78;          // px; cells land near-square around this
+const LOCK_SEL = 'a, button, input, textarea, select, .dot';
+const LOCK_MAX = 560;            // px; wider than this, stay on the grid
 
 export function initCursor() {
   if (REDUCED || window.matchMedia('(hover: none), (pointer: coarse)').matches) return null;
 
-  const lead = document.getElementById('curLead');
-  const trail = [...document.querySelectorAll('.cur-trail')];
-  if (!lead || !trail.length) return null;
+  const root = document.getElementById('cur');
+  const cell = document.getElementById('curCell');
+  if (!root || !cell) return null;
 
-  let cellW = innerWidth / GRID_COLS;
-  let cellH = innerHeight / GRID_ROWS;
-  addEventListener('resize', () => {
-    cellW = innerWidth / GRID_COLS;
-    cellH = innerHeight / GRID_ROWS;
-  }, { passive: true });
+  const hair = { h: root.querySelector('.cur__h'), v: root.querySelector('.cur__v') };
+  const trail = [...root.querySelectorAll('.cur__trail')];
 
-  const HOT = 'a, button, input, textarea, select, label, [data-goto], .work-row, .focus-cell, .reel__card';
+  let cols = 1, rows = 1, cellW = TARGET_CELL, cellH = TARGET_CELL;
 
-  let px = -1000, py = -1000;      // raw pointer
-  let size = BLOCK_MIN;
-  let lastX = px, lastY = py, lastT = performance.now();
-  let hot = false;
-  let slot = 0;                    // round-robin over the trail cells
+  function measure() {
+    cols = Math.max(1, Math.round(innerWidth / TARGET_CELL));
+    rows = Math.max(1, Math.round(innerHeight / TARGET_CELL));
+    cellW = innerWidth / cols;
+    cellH = innerHeight / rows;
+  }
+  measure();
+  addEventListener('resize', measure, { passive: true });
 
-  const place = (el, x, y, s) => {
-    // Clamp so a block never hangs off the viewport and forces a scrollbar.
-    const left = Math.max(0, Math.min(Math.round(x - s / 2), Math.round(innerWidth - s)));
-    const top  = Math.max(0, Math.min(Math.round(y - s / 2), Math.round(innerHeight - s)));
-    el.style.transform = `translate3d(${left}px, ${top}px, 0)`;
-    el.style.width = `${s}px`;
-    el.style.height = `${s}px`;
+  // Fractional geometry is fine: only a handful of cells are ever drawn, so
+  // there is no tiling for a rounding seam to show up in.
+  const box = (el, x, y, w, h) => {
+    el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    el.style.width = `${w}px`;
+    el.style.height = `${h}px`;
   };
 
-  addEventListener('pointermove', (e) => {
-    const now = performance.now();
-    const dt = Math.max(1, now - lastT);
-    lastT = now;
+  let px = -1000, py = -1000;
+  let col = -1, row = -1;
+  let slot = 0;
+  let lock = null;
 
+  addEventListener('pointermove', (e) => {
     px = e.clientX;
     py = e.clientY;
-    const speed = (Math.hypot(px - lastX, py - lastY) / dt) * 16;
-    lastX = px; lastY = py;
 
-    size = Math.min(BLOCK_MAX, Math.max(BLOCK_MIN, BLOCK_MIN + speed * 2));
-    hot = !!e.target?.closest?.(HOT);
+    const hit = e.target?.closest?.(LOCK_SEL) || null;
+    lock = hit && hit.getBoundingClientRect().width <= LOCK_MAX ? hit : null;
 
     if (!document.body.classList.contains('pointer-live')) {
       document.body.classList.add('pointer-live');
     }
-
-    // Stamp a trail cell at the snapped position, then let CSS fade it.
-    const cell = trail[slot];
-    slot = (slot + 1) % TRAIL;
-    place(cell, Math.round(px / cellW) * cellW, Math.round(py / cellH) * cellH, size);
-    cell.classList.toggle('is-quick', hot);
-    cell.style.opacity = hot ? '0.12' : '0.55';
-    // Restart the transition from the new opacity.
-    void cell.offsetWidth;
-    cell.style.opacity = '0';
   }, { passive: true });
 
-  // The lead block steps toward the pointer rather than easing smoothly: it
-  // only commits when the snapped cell changes, which is what reads as digital.
-  let shownX = px, shownY = py;
-
   return function step() {
-    const snapX = Math.round(px / cellW) * cellW;
-    const snapY = Math.round(py / cellH) * cellH;
-    // Quantised follow — halfway each frame, but snapped, so it lands in 2-3
-    // visible jumps the way GSAP's steps(2) ease does in the original.
-    shownX = Math.abs(snapX - shownX) < 1 ? snapX : shownX + (snapX - shownX) * 0.5;
-    shownY = Math.abs(snapY - shownY) < 1 ? snapY : shownY + (snapY - shownY) * 0.5;
-    place(lead, shownX, shownY, size);
-    lead.style.opacity = hot ? '0.35' : '0.92';
+    if (lock && lock.isConnected) {
+      const r = lock.getBoundingClientRect();
+      root.classList.add('is-locked');
+      box(cell, r.left, r.top, r.width, r.height);
+      hair.h.style.transform = `translate3d(0, ${r.top}px, 0)`;
+      hair.v.style.transform = `translate3d(${r.left}px, 0, 0)`;
+      return;
+    }
+
+    root.classList.remove('is-locked');
+
+    const c = Math.min(cols - 1, Math.max(0, Math.floor(px / cellW)));
+    const r = Math.min(rows - 1, Math.max(0, Math.floor(py / cellH)));
+    const x = c * cellW;
+    const y = r * cellH;
+
+    box(cell, x, y, cellW, cellH);
+    hair.h.style.transform = `translate3d(0, ${y}px, 0)`;
+    hair.v.style.transform = `translate3d(${x}px, 0, 0)`;
+
+    if (c !== col || r !== row) {
+      // Stamp the cell just vacated, then let CSS fade it out in steps.
+      if (col >= 0 && trail.length) {
+        const t = trail[slot];
+        slot = (slot + 1) % trail.length;
+        box(t, col * cellW, row * cellH, cellW, cellH);
+        t.style.opacity = '0.5';
+        void t.offsetWidth;         // restart the transition from 0.5
+        t.style.opacity = '0';
+      }
+      col = c;
+      row = r;
+    }
   };
 }
 

@@ -71,12 +71,21 @@ momentum, find-in-page and anchor restoration. Everything animated is
 transform, opacity or a sliding curtain, so none of it touches layout, and one
 shared `requestAnimationFrame` loop drives the per-frame work.
 
-The cursor is ported from fastrapi.in: positions snap to a coarse
-viewport/24x12 grid so it moves in chunky jumps, block size scales with
-pointer speed, and a five-cell trail fades on a stepped timing function. The
-colours are not ported — the original's lime-on-black would fight this
-palette, so the blocks are neutral and `difference`-blended, which also means
-one cursor reads on cream, on the espresso section and over the hero canvas.
+The cursor is a grid cell, not a blob near one. The viewport is divided into
+near-square cells of ~78px, and the highlight takes the exact bounds of
+whichever cell the pointer is inside — placed at `col * cellW, row * cellH`
+and sized `cellW x cellH` — so it snaps cell to cell and its edges always
+line up. Two hairlines track the cell's own top and left edges, which makes
+the grid readable rather than merely implied. Over a small interactive target
+the cell leaves the grid and takes that element's bounding box instead.
+
+Nothing about it scales with pointer speed, which was a deliberate reversal:
+sizing the box by speed is exactly what breaks the alignment, because the box
+ends up centred near a grid point at an arbitrary size, lining up with
+nothing. fastrapi.in was the starting point, but this is not that cursor —
+outlines rather than solid blocks, no speed-scaled size, cell-exact geometry,
+element lock-on, and neutral `difference` blending so one cursor reads on
+cream, on the espresso section and over the hero canvas.
 
 The demo reel pins on a wide screen and tracks sideways off vertical scroll;
 on touch and under reduced motion it stays a native horizontal scroller with
