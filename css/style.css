@@ -17,7 +17,7 @@
   --paper-2:   #eeddc7;
   --ink:       #3b241a;
   --ink-soft:  #6b5645;
-  --ink-faint: #8a7360;
+  --ink-faint: #7a6250;
   --copper:    #b5502f;
   --copper-dk: #8c3b21;
   --caramel:   #e0a97a;
@@ -77,8 +77,6 @@ body {
   overflow-x: hidden;
   transition: background 0.7s var(--ease), color 0.7s var(--ease);
 }
-
-body.is-locked { overflow: hidden; }
 
 img { display: block; max-width: 100%; }
 button, input, textarea { font: inherit; color: inherit; }

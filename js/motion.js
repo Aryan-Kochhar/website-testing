@@ -21,6 +21,11 @@ const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
    fold". Holding the reference is the fix. */
 const OBSERVERS = new Set();
 export function keepObserver(io) { OBSERVERS.add(io); return io; }
+export function releaseObserver(io) {
+  if (!io) return;
+  io.disconnect();
+  OBSERVERS.delete(io);
+}
 
 const lerp = (a, b, t) => a + (b - a) * t;
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -77,6 +82,10 @@ export function scramble(el, dur = 820) {
   const t0 = performance.now();
 
   function tick(now) {
+    // Route changes replace the detail page's markup mid-animation; without
+    // this the loop keeps writing to detached text nodes until it finishes.
+    if (!el.isConnected) return;
+
     const p = clamp01((now - t0) / dur);
     let seen = 0;
 
@@ -105,11 +114,11 @@ export function scramble(el, dur = 820) {
 
 export function initReveals(root = document) {
   const targets = root.querySelectorAll('.r-up, .r-fade, .r-clip, [data-split], [data-scramble]');
-  if (!targets.length) return;
+  if (!targets.length) return null;
 
   if (REDUCED) {
     targets.forEach((el) => el.classList.add('is-in'));
-    return;
+    return null;
   }
 
   const io = keepObserver(new IntersectionObserver(
@@ -128,6 +137,7 @@ export function initReveals(root = document) {
   ));
 
   targets.forEach((el) => io.observe(el));
+  return io;
 }
 
 /* ---------------------------------------------------------------- cursor --- */
@@ -227,10 +237,10 @@ export function initMarquee() {
 /* -------------------------------------------------------------- magnetic --- */
 /* Buttons lean toward the cursor while it is near them. */
 
-export function initMagnetic() {
+export function initMagnetic(root = document) {
   if (REDUCED) return;
 
-  for (const el of document.querySelectorAll('.btn')) {
+  for (const el of root.querySelectorAll('.btn')) {
     el.addEventListener('pointermove', (e) => {
       const b = el.getBoundingClientRect();
       const dx = (e.clientX - (b.left + b.width / 2)) / b.width;

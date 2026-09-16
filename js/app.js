@@ -15,7 +15,7 @@ import { initFluid } from './fluid.js';
 import {
   splitText, scramble, initReveals, initCursor, initParallax,
   initRail, initMarquee, initMagnetic, scrollToId, startLoop, keepObserver,
-  REDUCED,
+  releaseObserver, REDUCED,
 } from './motion.js';
 
 const home = document.getElementById('home');
@@ -135,7 +135,13 @@ function renderDetail(id) {
     let timer = null;
 
     const show = (i) => {
-      idx = (i + imgs.length) % imgs.length;
+      // Step past any image that 404'd, rather than fading to an empty frame.
+      let next = (i + imgs.length) % imgs.length;
+      for (let tries = 0; tries < imgs.length; tries++) {
+        if (!imgs[next].classList.contains('is-broken')) break;
+        next = (next + 1) % imgs.length;
+      }
+      idx = next;
       imgs.forEach((im, k) => im.classList.toggle('is-on', k === idx));
       dots.forEach((d, k) => d.classList.toggle('is-on', k === idx));
     };
@@ -153,7 +159,8 @@ function renderDetail(id) {
     detail._cleanup = () => clearInterval(timer);
   }
 
-  initReveals(detail);
+  detail._io = initReveals(detail);
+  initMagnetic(detail);
   return true;
 }
 
@@ -166,6 +173,8 @@ function paint(hash) {
 
   detail._cleanup?.();
   detail._cleanup = null;
+  releaseObserver(detail._io);
+  detail._io = null;
 
   if (m && renderDetail(decodeURIComponent(m[1]))) {
     home.hidden = true;
