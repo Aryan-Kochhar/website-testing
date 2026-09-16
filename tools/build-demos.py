@@ -1,122 +1,154 @@
-"""Vendor project demos into the site.
+"""Build the moving demo clips from the project repos' GIFs.
 
-Usage:  DEMO_SRC=~/src FFMPEG=ffmpeg python3 tools/build-demos.py
+Usage:  python tools/build-demos.py          (needs ffmpeg on PATH)
+        FFMPEG=/path/to/ffmpeg python tools/build-demos.py
 
-Expects the project repos checked out side by side under DEMO_SRC.
+Stills and video posters are NOT built here — those are tools/vendor-stills.py,
+which needs no ffmpeg. This script only produces the .webm clips.
 
-The originals are hotlinked GIFs in the project repos — 15.7MB in total, one
-of them 439 frames / 35s. Nothing that heavy is going to load on a portfolio.
+What changed from the first version of this pipeline, and why:
 
-Animated demos become WebM (VP8), trimmed to a short loop; stills become WebP.
-Every animation also gets a WebP poster, which is what a browser that cannot
-decode VP8 shows instead.
+  * It no longer caps width at 720. Three of these GIFs are 1200px native and
+    one is 880px, so that cap was throwing away up to 40% of the width for
+    nothing. Each clip is now encoded at its source resolution.
+
+  * It no longer pipes JPEG frames. The old pipeline went
+    GIF -> JPEG(q92) -> VP8(crf 34), which is two lossy generations stacked on
+    top of a GIF's 256-colour palette. Frames now go to ffmpeg as raw RGB, so
+    the only lossy step is the final encode.
+
+  * VP9 instead of VP8, at a lower crf. Roughly half the bitrate for the same
+    quality, and supported everywhere that matters (Safari 14.1+). The poster
+    covers anything older.
+
+  * No frame decimation. The sources run at 12.5-14.3fps already; dropping
+    every other frame to hit a target made them stutter for no real saving.
 """
-import io, os, subprocess, pathlib
+import io
+import os
+import pathlib
+import shutil
+import subprocess
+import sys
+
 from PIL import Image, ImageSequence
 
-# Override with env vars; SRC is wherever the project repos are checked out.
-FF  = os.environ.get('FFMPEG', 'ffmpeg')
-SRC = pathlib.Path(os.environ.get('DEMO_SRC', os.path.expanduser('~/src')))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from _repo import fetch, even  # noqa: E402
+
+FF = os.environ.get('FFMPEG', 'ffmpeg')
 OUT = pathlib.Path(__file__).resolve().parent.parent / 'assets' / 'demos'
 
-FPS = 14          # demo screencasts don't need more
-MAX_SECONDS = 9   # a loop, not the whole session
-ANIM_W = 720
-STILL_W = 1280
+MAX_SECONDS = 9      # a loop, not the whole session
+MAX_WIDTH = 1280     # only ever downscales; every source here is at or under
+CRF = 30             # VP9: lower is better, 30 is visually clean for screencasts
 
 ANIMATED = [
-    ('quant-copilot', 'agent-run',   'agentic-quantitative-research-copilot/assets/02-agent-run.gif'),
-    ('quant-copilot', 'landing',     'agentic-quantitative-research-copilot/assets/01-landing.gif'),
-    ('quant-copilot', 'tool-stream', 'agentic-quantitative-research-copilot/assets/03-tool-stream.gif'),
-    ('architech',     'city',        '-architech-/demo/demo.gif'),
-    ('architech',     'city-2',      '-architech-/demo/demo2.gif'),
-    ('congestion-rl', 'intersection','congestion-control-with-rl/congestion-control.gif'),
+    ('quant-copilot', 'agent-run',    'Agentic-Quantitative-Research-Copilot', 'assets/02-agent-run.gif'),
+    ('quant-copilot', 'landing',      'Agentic-Quantitative-Research-Copilot', 'assets/01-landing.gif'),
+    ('quant-copilot', 'tool-stream',  'Agentic-Quantitative-Research-Copilot', 'assets/03-tool-stream.gif'),
+    ('architech',     'city',         '-ArchiTech-', 'demo/demo.gif'),
+    ('architech',     'city-2',       '-ArchiTech-', 'demo/demo2.gif'),
+    ('congestion-rl', 'intersection', 'Congestion-Control-With-RL', 'congestion-control.gif'),
 ]
 
-STILLS = [
-    ('quant-copilot', 'hero',       'agentic-quantitative-research-copilot/assets/00-landing-hero.png'),
-    ('logmind',       'dashboard',  'logmind---server-log-analyzer/assets/demo.png'),
-    ('logmind',       'streamlit-1','logmind---server-log-analyzer/assets/Streamlit1.png'),
-    ('logmind',       'streamlit-2','logmind---server-log-analyzer/assets/Streamlit2.png'),
-    ('logmind',       'streamlit-3','logmind---server-log-analyzer/assets/Streamlit3.png'),
-    ('architech',     'scene-road', '-architech-/demo/scene2_road_river.png'),
-    ('architech',     'scene-park', '-architech-/demo/scene3_square_park.png'),
-    ('resonance',     'poster',     'resonance/visualizations/summary_poster.png'),
-    ('resonance',     'curves',     'resonance/visualizations/training_curves.png'),
-]
 
-def even(n):
-    return n if n % 2 == 0 else n - 1
-
-def fit(im, target_w):
-    if im.width <= target_w:
-        return im
-    h = round(im.height * target_w / im.width)
-    return im.resize((even(target_w), even(h)), Image.LANCZOS)
-
-def save_webp(im, dest, quality=80):
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    im.convert('RGB').save(dest, 'WEBP', quality=quality, method=5)
-    return dest.stat().st_size
-
-def encode_anim(src, dest_webm, dest_poster):
-    im = Image.open(src)
-    native_ms = im.info.get('duration') or 80
-    # Keep every Nth frame so playback lands near FPS without re-timing.
-    step = max(1, round((1000 / native_ms) / FPS))
-    limit = int(MAX_SECONDS * FPS)
+def load_frames(data):
+    """Decode a GIF to a list of same-sized RGB frames, plus its frame delay."""
+    im = Image.open(io.BytesIO(data))
+    delay_ms = im.info.get('duration') or 70
+    fps = 1000.0 / delay_ms
+    limit = int(MAX_SECONDS * fps)
 
     frames = []
-    for i, fr in enumerate(ImageSequence.Iterator(im)):
-        if i % step:
-            continue
-        frames.append(fit(fr.convert('RGB'), ANIM_W))
-        if len(frames) >= limit:
+    for i, raw in enumerate(ImageSequence.Iterator(im)):
+        if i >= limit:
             break
+        frame = raw.convert('RGB')
+        if frame.width > MAX_WIDTH:
+            h = round(frame.height * MAX_WIDTH / frame.width)
+            frame = frame.resize((even(MAX_WIDTH), even(h)), Image.LANCZOS)
+        elif frame.width % 2 or frame.height % 2:
+            frame = frame.resize((even(frame.width), even(frame.height)), Image.LANCZOS)
+        frames.append(frame)
+
     if not frames:
-        raise RuntimeError(f'no frames decoded from {src}')
+        raise RuntimeError('no frames decoded')
+    return frames, fps
 
-    save_webp(frames[0], dest_poster, quality=72)
 
-    dest_webm.parent.mkdir(parents=True, exist_ok=True)
-    p = subprocess.Popen(
-        [FF, '-y', '-hide_banner', '-loglevel', 'error',
-         '-f', 'image2pipe', '-vcodec', 'mjpeg', '-framerate', str(FPS), '-i', 'pipe:0',
-         '-c:v', 'libvpx', '-b:v', '0', '-crf', '34', '-an',
-         '-pix_fmt', 'yuv420p', '-deadline', 'good', '-cpu-used', '3',
-         str(dest_webm)],
-        stdin=subprocess.PIPE)
-    # JPEG, not PNG: this ffmpeg build ships only the mjpeg and libvpx
-    # decoders, so a piped PNG sequence produces no stream at all. q=92 keeps
-    # the intermediate generation invisible under the VP8 encode that follows.
-    for fr in frames:
-        buf = io.BytesIO()
-        fr.save(buf, 'JPEG', quality=92)
-        p.stdin.write(buf.getvalue())
-    p.stdin.close()
-    if p.wait() != 0:
-        raise RuntimeError(f'ffmpeg failed on {src}')
-    return len(frames), dest_webm.stat().st_size
+def encode(frames, fps, dest):
+    w, h = frames[0].size
+    dest.parent.mkdir(parents=True, exist_ok=True)
 
-total_before = total_after = 0
-print(f'{"asset":34} {"before":>9} {"after":>9}  frames')
-print('-' * 66)
+    cmd = [
+        FF, '-y', '-hide_banner', '-loglevel', 'error',
+        # Raw RGB in: unambiguous, and no intermediate codec to lose detail to.
+        '-f', 'rawvideo', '-pix_fmt', 'rgb24',
+        '-s', f'{w}x{h}', '-framerate', f'{fps:.4f}', '-i', 'pipe:0',
+        '-c:v', 'libvpx-vp9', '-crf', str(CRF), '-b:v', '0',
+        '-row-mt', '1', '-cpu-used', '2', '-an',
+        '-pix_fmt', 'yuv420p',
+        str(dest),
+    ]
 
-for proj, name, rel in ANIMATED:
-    src = SRC / rel
-    before = src.stat().st_size
-    n, after = encode_anim(src, OUT/proj/f'{name}.webm', OUT/proj/f'{name}.webp')
-    after += (OUT/proj/f'{name}.webp').stat().st_size
-    total_before += before; total_after += after
-    print(f'{proj+"/"+name:34} {before/1e6:8.2f}M {after/1e6:8.2f}M  {n}')
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        for frame in frames:
+            proc.stdin.write(frame.tobytes())
+        proc.stdin.close()
+    except BrokenPipeError:
+        # ffmpeg died early — its stderr explains why, so fall through to wait.
+        pass
 
-for proj, name, rel in STILLS:
-    src = SRC / rel
-    before = src.stat().st_size
-    after = save_webp(fit(Image.open(src), STILL_W), OUT/proj/f'{name}.webp', 82)
-    total_before += before; total_after += after
-    print(f'{proj+"/"+name:34} {before/1e6:8.2f}M {after/1e6:8.2f}M')
+    err = proc.stderr.read().decode('utf-8', 'ignore').strip()
+    if proc.wait() != 0:
+        raise RuntimeError(err or f'ffmpeg exited {proc.returncode}')
+    return dest.stat().st_size
 
-print('-' * 66)
-print(f'{"TOTAL":34} {total_before/1e6:8.2f}M {total_after/1e6:8.2f}M'
-      f'   ({100*(1-total_after/total_before):.0f}% smaller)')
+
+def main():
+    if not shutil.which(FF) and not os.path.exists(FF):
+        print(f'ffmpeg not found (looked for {FF!r}).')
+        print('Install it with:  winget install Gyan.FFmpeg')
+        print('then open a new terminal so PATH picks it up.')
+        return 1
+
+    total_before = total_after = 0
+    failures = []
+
+    print(f'{"asset":30} {"gif":>9} {"webm":>9} {"was":>9}  dimensions   frames')
+    print('-' * 80)
+
+    for proj, name, repo, path in ANIMATED:
+        dest = OUT / proj / f'{name}.webm'
+        was = dest.stat().st_size if dest.exists() else 0
+        try:
+            data = fetch(repo, path)
+            frames, fps = load_frames(data)
+            size = encode(frames, fps, dest)
+        except Exception as exc:
+            failures.append((f'{proj}/{name}', str(exc)))
+            print(f'{proj + "/" + name:30} {"—":>9} {"FAILED":>9}  {exc}')
+            continue
+
+        total_before += len(data)
+        total_after += size
+        w, h = frames[0].size
+        print(f'{proj + "/" + name:30} {len(data)/1e6:8.2f}M {size/1e6:8.2f}M '
+              f'{was/1e6:8.2f}M  {w}x{h:<8} {len(frames)}')
+
+    print('-' * 80)
+    print(f'{"TOTAL":30} {total_before/1e6:8.2f}M {total_after/1e6:8.2f}M')
+    print('\nPosters are built separately: python tools/vendor-stills.py')
+
+    if failures:
+        print(f'\n{len(failures)} failed:')
+        for name, err in failures:
+            print(f'  {name}: {err}')
+        return 1
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

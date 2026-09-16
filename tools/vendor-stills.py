@@ -14,14 +14,14 @@ at ~780 CSS px. This uses q92 and a 1600px cap, and picks up six images that
 were never vendored at all.
 """
 import io
-import json
 import pathlib
 import sys
-import urllib.request
 
 from PIL import Image
 
-OWNER = 'Aryan-Kochhar'
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from _repo import fetch, even  # noqa: E402
+
 OUT = pathlib.Path(__file__).resolve().parent.parent / 'assets' / 'demos'
 
 MAX_W = 1600
@@ -63,58 +63,6 @@ POSTERS = [
     ('architech',     'city-2',      '-ArchiTech-', 'demo/demo2.gif'),
     ('congestion-rl', 'intersection', 'Congestion-Control-With-RL', 'congestion-control.gif'),
 ]
-
-# These repos do not agree on a default branch name — Resonance's is `final`.
-# Asking the API is the accurate way, but unauthenticated it allows only 60
-# calls an hour, and when it runs out the lookup fails silently and every
-# fetch 404s against a branch that does not exist. So: ask once, but always
-# keep fallbacks, and remember whichever branch actually served a file.
-CANDIDATE_BRANCHES = ('main', 'master', 'final')
-
-_known = {}
-
-
-def _api_default_branch(repo):
-    url = f'https://api.github.com/repos/{OWNER}/{repo}'
-    try:
-        with urllib.request.urlopen(url, timeout=20) as r:
-            return json.load(r).get('default_branch')
-    except Exception:
-        return None
-
-
-def _branch_order(repo):
-    if repo in _known:
-        return [_known[repo]]
-    order = []
-    api = _api_default_branch(repo)
-    if api:
-        order.append(api)
-    for c in CANDIDATE_BRANCHES:
-        if c not in order:
-            order.append(c)
-    return order
-
-
-def fetch(repo, path):
-    last = None
-    for branch in _branch_order(repo):
-        url = f'https://raw.githubusercontent.com/{OWNER}/{repo}/{branch}/{path}'
-        try:
-            with urllib.request.urlopen(url, timeout=60) as r:
-                data = r.read()
-            _known[repo] = branch          # remember what worked
-            return data
-        except urllib.error.HTTPError as exc:
-            if exc.code != 404:
-                raise
-            last = exc
-    raise last or RuntimeError(f'could not fetch {repo}/{path}')
-
-
-def even(n):
-    return n if n % 2 == 0 else n - 1
-
 
 def fit(im, target_w):
     # Only ever downscale, and keep both dimensions even — some encoders
