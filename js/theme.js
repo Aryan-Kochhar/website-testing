@@ -77,7 +77,10 @@ const KEY = 'arry-roast';
 
 /* Live RGB triples for whatever is currently applied. The canvases read these
    every frame, so they are plain arrays rather than parsed on demand. */
-export const INK = { ink: [0, 0, 0], accent: [0, 0, 0], shock: [0, 0, 0], bg: [0, 0, 0] };
+export const INK = {
+  ink: [0, 0, 0], muted: [0, 0, 0], accent: [0, 0, 0], shock: [0, 0, 0],
+  bg: [0, 0, 0], edge: [0, 0, 0], stamp: [0, 0, 0], pop: [0, 0, 0],
+};
 
 const hex2rgb = (h) => {
   const s = h.replace('#', '');
@@ -111,10 +114,7 @@ export function applyRoast(roast) {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', roast.bg);
 
-  INK.ink = hex2rgb(roast.ink);
-  INK.accent = hex2rgb(roast.accent);
-  INK.shock = hex2rgb(roast.shock);
-  INK.bg = hex2rgb(roast.bg);
+  for (const key of Object.keys(INK)) INK[key] = hex2rgb(roast[key]);
 
   // The cup icon follows the roast everywhere it is used.
   for (const slot of document.querySelectorAll('[data-roast-icon]')) {

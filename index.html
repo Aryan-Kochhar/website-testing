@@ -45,6 +45,7 @@
   <div class="nav__links">
     <button class="nav__link" data-goto="top">Home</button>
     <button class="nav__link" data-goto="work">Work</button>
+    <button class="nav__link" data-goto="map">Map</button>
     <button class="nav__link" data-goto="demos">Demos</button>
     <button class="nav__link" data-goto="about">About</button>
     <button class="nav__link" data-goto="contact">Contact</button>
@@ -111,6 +112,23 @@
       <h2 class="h-display r-up">Things I've <em>built</em></h2>
       <p class="lede r-up">Mostly agentic AI and RAG systems — with the occasional detour into 3D cities and OCR.</p>
       <div class="work-list" id="workList"></div>
+    </div>
+  </section>
+
+  <section class="section section--raised" id="map">
+    <div class="wrap">
+      <div class="kicker r-fade">☕ the brew map</div>
+      <h2 class="h-display r-up">How it all <em>connects</em></h2>
+      <p class="lede r-up">Every project, every tool, and the ones that keep showing up together. Drag things around — it's fine, nothing breaks.</p>
+      <div class="brew-map r-up">
+        <canvas class="brew-map__canvas" id="brewMap" role="img"
+                aria-label="A map of my projects and the tools they share. The same information is listed below for screen readers."></canvas>
+        <div class="brew-map__foot">
+          <span id="brewStat"></span>
+          <span id="brewHint"></span>
+        </div>
+        <ul class="sr-only" id="brewList"></ul>
+      </div>
     </div>
   </section>
 

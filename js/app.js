@@ -15,6 +15,7 @@ import { PROJECTS, COFFEE_QUOTES, COFFEE_TENTH } from './data.js';
 import { initRoasts, onRoastChange } from './theme.js';
 import { initCursor } from './cursor.js';
 import { initScene } from './scene.js';
+import { initBrewMap } from './brewmap.js';
 import {
   initReveals, initParallax, initRail, initMarquee, initMagnetic,
   scrollToId, startLoop, keepObserver, releaseObserver, REDUCED, COARSE,
@@ -487,6 +488,13 @@ function boot() {
   // observers issuing duplicate play/pause calls.
   wireVideos(home);
 
+  const brewMap = initBrewMap(document.getElementById('brewMap'), {
+    onOpen: (id) => go(`#/p/${id}`),
+    caption: document.getElementById('brewStat'),
+    hint: document.getElementById('brewHint'),
+    list: document.getElementById('brewList'),
+  });
+
   startLoop([
     initCursor(),
     initParallax(),
@@ -494,6 +502,7 @@ function boot() {
     marqueeStep,
     initRail((p) => scene?.setScroll?.(p)),
     scene.step,
+    brewMap?.step,
   ]);
 
   // Nav
@@ -520,7 +529,7 @@ function boot() {
       links.forEach((l) => l.classList.toggle('is-active', l.dataset.goto === e.target.id));
     }
   }, { threshold: 0.2, rootMargin: '-25% 0px -55% 0px' }));
-  for (const id of ['top', 'work', 'demos', 'about', 'contact']) {
+  for (const id of ['top', 'work', 'map', 'demos', 'about', 'contact']) {
     const el = document.getElementById(id);
     if (el) spy.observe(el);
   }

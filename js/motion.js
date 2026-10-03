@@ -49,7 +49,9 @@ export function watchDpr(fn) {
    `width:auto` resolves to its INTRINSIC size — the width attribute, which is
    box*dpr — and the element ends up dpr times too big. At dpr 1 that is
    invisible; at dpr 1.5 everything drawn lands at 1.5x the pointer. */
-export function fitCanvas(cv, ctx) {
+const RESIZERS = new Set();   // retained for the same reason as OBSERVERS
+
+export function fitCanvas(cv, ctx, onFit) {
   let w = 0, h = 0;
   function fit() {
     const dpr = Math.min(devicePixelRatio || 1, 2);
@@ -58,9 +60,20 @@ export function fitCanvas(cv, ctx) {
     cv.width = Math.max(1, Math.round(w * dpr));
     cv.height = Math.max(1, Math.round(h * dpr));
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);   // setting width/height resets it
+    onFit?.(w, h);
   }
   fit();
-  addEventListener('resize', fit, { passive: true });
+  // A ResizeObserver rather than a window resize listener: it also fires
+  // when the canvas goes from display:none back to visible — coming home
+  // from a project page — which no window event reports. Without it, a
+  // resize while away left the canvas fitted to a 0x0 box on return.
+  if ('ResizeObserver' in window) {
+    const ro = new ResizeObserver(fit);
+    ro.observe(cv);
+    RESIZERS.add(ro);
+  } else {
+    addEventListener('resize', fit, { passive: true });
+  }
   watchDpr(fit);
   return () => ({ w, h });
 }

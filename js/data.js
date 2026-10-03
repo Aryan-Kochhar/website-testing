@@ -80,6 +80,7 @@ export const PROJECTS = [
   {
     id: 'aadhaar-ocr',
     name: 'Aadhaar Card OCR API',
+    label: 'Aadhaar OCR',          // short form, used where space is tight (the brew map)
     url: 'https://github.com/Aryan-Kochhar/Aadhar-Card-OCR-API',
     short:
       'A lightweight Flask REST API that extracts name, DOB, gender, ID number, address and guardian info from Aadhaar card images using Tesseract OCR.',
@@ -91,6 +92,7 @@ export const PROJECTS = [
   {
     id: 'congestion-rl',
     name: 'Congestion Control with RL',
+    label: 'Congestion RL',
     url: 'https://github.com/Aryan-Kochhar/Congestion-Control-With-RL',
     short:
       'A SUMO traffic simulation combining reinforcement learning with real-time detection to optimize traffic flow under changing conditions.',

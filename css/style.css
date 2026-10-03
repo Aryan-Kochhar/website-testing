@@ -821,6 +821,48 @@ a { color: var(--shock); text-decoration: none; }
 @keyframes curtainIn  { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes curtainOut { from { transform: translateY(0); } to { transform: translateY(-100%); } }
 
+/* ------------------------------------------------------------ brew map --- */
+/* The graph is drawn on canvas by js/brewmap.js. The box, the dot grid and
+   the sticker shadow are CSS so they follow the roast without the canvas
+   having to redraw anything for them.
+
+   The height is load-bearing: fitCanvas sizes the backing store from the
+   element's CSS box, and a canvas with `height:auto` takes its height from
+   its own attribute — so every refit would grow it, and the ResizeObserver
+   would chase it forever. */
+
+.brew-map { margin-top: 36px; }
+.brew-map__canvas {
+  display: block;
+  width: 100%;
+  height: clamp(460px, 64vh, 640px);
+  background-color: var(--bg);
+  background-image: radial-gradient(circle,
+    color-mix(in srgb, var(--edge) 30%, transparent) 1.1px, transparent 1.5px);
+  background-size: 24px 24px;
+  border: 2px solid var(--edge);
+  box-shadow: var(--pop-shadow);
+  /* Vertical swipes still scroll the page on touch; labels are tap-only there. */
+  touch-action: pan-y;
+}
+.brew-map__foot {
+  display: flex; flex-wrap: wrap; justify-content: space-between;
+  gap: 6px 22px; margin-top: 16px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted);
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%);
+  white-space: nowrap; border: 0;
+}
+
+@media (max-width: 640px) {
+  .brew-map__canvas { height: 560px; }
+}
+
 /* ------------------------------------------------------------ bean rain --- */
 
 .bean-drop {
