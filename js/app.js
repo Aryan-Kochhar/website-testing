@@ -16,6 +16,7 @@ import { initRoasts, onRoastChange } from './theme.js';
 import { initCursor } from './cursor.js';
 import { initScene } from './scene.js';
 import { initBrewMap } from './brewmap.js';
+import { initBrewbot } from './brewbot.js';
 import {
   initReveals, initParallax, initRail, initMarquee, initMagnetic,
   scrollToId, startLoop, keepObserver, releaseObserver, REDUCED, COARSE,
@@ -302,6 +303,17 @@ function go(hash) {
   }, WIPE);
 }
 
+/* A section on the home scroll, from wherever you are — including a project
+   page, where home has to be painted back first. */
+function gotoSection(id) {
+  if (location.hash && location.hash !== '#/') {
+    go('#/');
+    setTimeout(() => scrollToId(id), WIPE + 80);
+  } else {
+    scrollToId(id);
+  }
+}
+
 /* ----------------------------------------------------------------- pour --- */
 /* Kept from the original site. Clicking pours a quote and stirs the scene. */
 
@@ -495,6 +507,13 @@ function boot() {
     list: document.getElementById('brewList'),
   });
 
+  initBrewbot({
+    go,
+    gotoSection,
+    beanRain,
+    pinTool: (tag) => brewMap?.pin(tag),
+  });
+
   startLoop([
     initCursor(),
     initParallax(),
@@ -507,15 +526,7 @@ function boot() {
 
   // Nav
   for (const btn of document.querySelectorAll('[data-goto]')) {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.goto;
-      if (location.hash && location.hash !== '#/') {
-        go('#/');
-        setTimeout(() => scrollToId(id), WIPE + 80);
-      } else {
-        scrollToId(id);
-      }
-    });
+    btn.addEventListener('click', () => gotoSection(btn.dataset.goto));
   }
   for (const a of document.querySelectorAll('[data-route]')) {
     a.addEventListener('click', (e) => { e.preventDefault(); go('#/'); });

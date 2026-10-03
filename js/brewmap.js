@@ -488,5 +488,11 @@ export function initBrewMap(canvas, { onOpen, caption, hint, list } = {}) {
     }
   });
 
-  return { step, nodes, settle };
+  // Lets the rest of the page light a tool up from outside — brewbot uses it
+  // for "see Python on the brew map". Same state a click on the tool sets.
+  function pin(tag) {
+    pinned = (tag && byTag.get(tag)) || null;
+  }
+
+  return { step, nodes, settle, pin };
 }

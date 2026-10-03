@@ -863,6 +863,152 @@ a { color: var(--shock); text-decoration: none; }
   .brew-map__canvas { height: 560px; }
 }
 
+/* -------------------------------------------------------------- brewbot --- */
+/* Stacked above the roast picker, bottom right. Bottom left would sit on top
+   of the hero's "keep scrolling" cue. */
+
+.bot-fab {
+  position: fixed; z-index: 7200;
+  right: var(--gutter); bottom: 92px;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--stamp); background: var(--accent);
+  border: 2px solid var(--stamp); box-shadow: var(--pop-shadow);
+  padding: 10px 14px;
+  transition: transform .16s var(--ease), box-shadow .16s var(--ease),
+              background .25s var(--ease), color .25s var(--ease);
+}
+.bot-fab:hover, .bot-fab[aria-expanded="true"] {
+  transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--pop);
+  background: var(--shock); color: var(--bg);
+}
+.bot-fab kbd {
+  font: inherit; font-size: 10px; line-height: 1;
+  padding: 2px 6px; border: 1.5px solid currentColor;
+}
+
+.bot {
+  position: fixed; z-index: 7300;
+  right: var(--gutter); bottom: 146px;
+  width: min(440px, calc(100vw - 2 * var(--gutter)));
+  height: min(520px, calc(100vh - 230px));
+  display: flex; flex-direction: column;
+  background: var(--bg2); color: var(--ink);
+  border: 2px solid var(--edge);
+  box-shadow: 6px 6px 0 var(--pop);
+  font-family: var(--mono);
+  opacity: 0; visibility: hidden;
+  transform: translateY(12px) scale(.98); transform-origin: 100% 100%;
+  /* visibility flips instantly on open and only waits on close. Transitioned
+     both ways, it is still `hidden` at the first instant of opening — and
+     input.focus() called in that instant silently does nothing, because a
+     hidden element cannot take focus. */
+  transition: opacity .2s var(--ease), transform .3s var(--ease), visibility 0s linear .3s;
+}
+.bot.is-open {
+  opacity: 1; visibility: visible; transform: none;
+  transition: opacity .2s var(--ease), transform .3s var(--ease), visibility 0s;
+}
+
+.bot__head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 12px 10px 14px;
+  background: var(--accent); color: var(--stamp);
+  border-bottom: 2px solid var(--stamp);
+}
+.bot__title { font-weight: 700; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.bot__title small {
+  display: block; margin-top: 2px;
+  font-weight: 500; font-size: 9.5px; letter-spacing: .03em; text-transform: none; opacity: .75;
+}
+.bot__close {
+  width: 28px; height: 28px; flex-shrink: 0;
+  display: grid; place-items: center;
+  font-size: 16px; font-weight: 700; line-height: 1;
+  color: var(--ink); background: var(--bg);
+  border: 2px solid var(--stamp);
+}
+.bot__close:hover { background: var(--shock); color: var(--bg); }
+
+.bot__log {
+  flex: 1; overflow-y: auto; overscroll-behavior: contain;
+  padding: 14px; font-size: 12.5px; line-height: 1.65;
+}
+.bot__line + .bot__line { margin-top: 7px; }
+.bot__line--you { color: var(--ink); font-weight: 700; }
+.bot__line--you:not(:first-child) { margin-top: 18px; }
+.bot__line--call { color: var(--muted); font-size: 11px; }
+.bot__line--call b { color: var(--shock); font-weight: 700; }
+.bot__done { opacity: .75; margin-left: 4px; }
+.bot__fail, .bot__fail b { color: var(--shock); }
+.bot__say { color: var(--ink); }
+.bot__spin {
+  display: inline-block; width: 7px; height: 7px; margin-left: 5px;
+  vertical-align: middle; background: var(--shock);
+  animation: botBlink .5s steps(2) infinite;
+}
+@keyframes botBlink { to { opacity: .15; } }
+
+.bot__rows { display: flex; flex-direction: column; gap: 6px; }
+.bot__row {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  width: 100%; text-align: left;
+  padding: 8px 10px;
+  font-family: var(--mono); font-size: 12px; text-decoration: none;
+  color: var(--ink); background: var(--bg);
+  border: 1.5px solid var(--edge);
+  transition: background .2s var(--ease), color .2s var(--ease), transform .16s var(--ease);
+}
+.bot__row small {
+  color: var(--muted); font-size: 10px; letter-spacing: .03em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+.bot__row:hover { background: var(--shock); color: var(--bg); transform: translateX(3px); }
+.bot__row:hover small { color: var(--bg); }
+
+.bot__chips {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 10px 14px 0; border-top: 2px solid var(--edge);
+}
+.bot__chip {
+  font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+  padding: 4px 9px; color: var(--ink); background: var(--bg);
+  border: 1.5px solid var(--edge);
+}
+.bot__chip:hover { background: var(--accent); color: var(--stamp); border-color: var(--stamp); }
+
+.bot__form { display: flex; align-items: center; gap: 8px; padding: 10px 14px 12px; }
+.bot__prompt { color: var(--shock); font-weight: 700; }
+.bot__input {
+  flex: 1; min-width: 0;
+  padding: 9px 10px;
+  font-family: var(--mono); font-size: 13px;
+  color: var(--ink); background: var(--bg);
+  border: 2px solid var(--edge);
+}
+.bot__input:focus { outline: none; border-color: var(--shock); }
+.bot__input::placeholder { color: var(--muted); opacity: .85; }
+
+/* Short screens — small laptops, landscape phones — would squeeze the panel
+   to a sliver between the buttons and the top of the window. Give it the
+   full height instead; it covers its own button, and has a close in the head. */
+@media (max-height: 600px) and (min-width: 641px) {
+  .bot { bottom: 10px; height: calc(100vh - 20px); }
+}
+
+@media (max-width: 640px) {
+  .bot-fab { right: 10px; bottom: 64px; padding: 8px 11px; }
+  .bot-fab__long { display: none; }
+  /* A bottom sheet on phones: the full width, over everything below it. */
+  .bot {
+    right: 0; bottom: 0; width: 100%; height: 74vh;
+    border-width: 2px 0 0; box-shadow: none; transform-origin: 50% 100%;
+  }
+  /* Under 16px, iOS zooms the whole page when the field takes focus. */
+  .bot__input { font-size: 16px; }
+}
+
 /* ------------------------------------------------------------ bean rain --- */
 
 .bean-drop {
@@ -900,7 +1046,7 @@ a { color: var(--shock); text-decoration: none; }
   .roasts { right: 10px; bottom: 10px; padding: 4px; gap: 2px; }
   .roast { width: 34px; height: 34px; }
   .roast svg { width: 18px; height: 18px; }
-  .footer { padding-bottom: 76px; }
+  .footer { padding-bottom: 116px; }   /* clears the roast picker and brewbot */
 }
 
 @media (prefers-reduced-motion: reduce) {
