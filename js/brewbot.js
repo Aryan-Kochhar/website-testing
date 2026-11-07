@@ -47,8 +47,21 @@ const STOP = new Set([
 ]);
 const EXTRA_ALIASES = {
   'fact-knowledge-layer': ['fkl', 'facts'],
+  'rl-nav-failure-modes': ['navigation', 'robot', 'freezing'],
+  quakeflow: ['quake', 'earthquake', 'earthquakes', 'usgs'],
+  'typeform-clone': ['forms'],
   'aadhaar-ocr': ['aadhar'],
   'congestion-rl': ['traffic'],
+};
+
+// Shorthand people type for a tool. "rl" in particular is a tool question —
+// there are two RL projects, and it should list both, not pick one.
+const TOOL_ALIASES = {
+  rl: 'Reinforcement Learning',
+  'reinforcement learning': 'Reinforcement Learning',
+  nextjs: 'Next.js',
+  ts: 'TypeScript',
+  'data eng': 'Data Engineering',
 };
 
 const PROJECT_KEYS = PROJECTS.map((p) => {
@@ -56,7 +69,7 @@ const PROJECT_KEYS = PROJECTS.map((p) => {
   for (const src of [p.name, p.label || '', p.id]) {
     for (const w of norm(src).split(' ')) {
       if (!w || STOP.has(w)) continue;
-      if (w.length >= 3 || w === 'rl') words.add(w);
+      if (w.length >= 3) words.add(w);
     }
   }
   for (const w of EXTRA_ALIASES[p.id] || []) words.add(w);
@@ -78,6 +91,9 @@ const TAGS = [...new Set(PROJECTS.flatMap((p) => p.tags))];
 // Whole-word match, so "drag" is not a question about RAG.
 function findTool(q) {
   const hay = ` ${norm(q)} `;
+  for (const [alias, tag] of Object.entries(TOOL_ALIASES)) {
+    if (hay.includes(` ${alias} `) && TAGS.includes(tag)) return tag;
+  }
   let best = null, len = 0;
   for (const tag of TAGS) {
     const n = norm(tag);
@@ -316,6 +332,7 @@ export function initBrewbot({ go, gotoSection, beanRain, pinTool } = {}) {
     await call('get_project', `"${p.id}"`);
     await say(p.short);
     const next = [{ label: `open ${p.label || p.name} →`, cmd: `open ${p.id}` }];
+    if (p.live) next.push({ label: 'try it live ↗', href: p.live });
     if (p.watch) next.push({ label: 'watch the demo ↗', href: p.watch });
     next.push({ label: 'source on github ↗', href: p.url });
     rows(next);
