@@ -1,6 +1,7 @@
 """Build the moving demo clips from the project repos' GIFs.
 
 Usage:  python tools/build-demos.py          (needs ffmpeg on PATH)
+        python tools/build-demos.py rl-nav   (one project's clips only)
         FFMPEG=/path/to/ffmpeg python tools/build-demos.py
 
 Stills and video posters are NOT built here — those are tools/vendor-stills.py,
@@ -81,6 +82,8 @@ ANIMATED = [
     ('architech',     'city',         '-ArchiTech-', 'demo/demo.gif'),
     ('architech',     'city-2',       '-ArchiTech-', 'demo/demo2.gif'),
     ('congestion-rl', 'intersection', 'Congestion-Control-With-RL', 'congestion-control.gif'),
+    ('rl-nav',        'freezing',     'rl-nav-failure-modes', 'freezing.gif'),
+    ('rl-nav',        'collisions',   'rl-nav-failure-modes', 'collisions.gif'),
 ]
 
 
@@ -145,13 +148,22 @@ def main():
         print('then open a new terminal so PATH picks it up.')
         return 1
 
+    # Optional project filter, e.g. `python tools/build-demos.py rl-nav`. VP9
+    # output is not byte-identical between runs, so re-encoding every clip to
+    # add one project would put six unchanged videos in the diff.
+    only = set(sys.argv[1:])
+    clips = [a for a in ANIMATED if not only or a[0] in only]
+    if not clips:
+        print(f'nothing matches {sorted(only)}; projects are: {sorted({a[0] for a in ANIMATED})}')
+        return 1
+
     total_before = total_after = 0
     failures = []
 
     print(f'{"asset":30} {"gif":>9} {"webm":>9} {"was":>9}  dimensions   frames')
     print('-' * 80)
 
-    for proj, name, repo, path in ANIMATED:
+    for proj, name, repo, path in clips:
         dest = OUT / proj / f'{name}.webm'
         was = dest.stat().st_size if dest.exists() else 0
         try:

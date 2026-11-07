@@ -1,6 +1,7 @@
 """Re-vendor the demo STILLS straight from the project repos.
 
-Usage:  python tools/vendor-stills.py
+Usage:  python tools/vendor-stills.py              (everything)
+        python tools/vendor-stills.py rl-nav       (one project's files only)
 
 Unlike tools/build-demos.py this needs no local checkouts and no ffmpeg — it
 pulls each source over HTTPS from raw.githubusercontent and re-encodes with
@@ -46,6 +47,10 @@ STILLS = [
     ('resonance',     'heatmap-0',     'Resonance', 'visualizations/heatmaps_sample0.png'),   # never vendored
     ('resonance',     'spectral',      'Resonance', 'visualizations/spectral_sample0.png'),   # never vendored
     ('resonance',     'ber',           'Resonance', 'visualizations/ber_vs_snr.png'),         # never vendored
+
+    ('rl-nav',        'frontier',            'rl-nav-failure-modes', 'final/figures/b1_frontier.png'),
+    ('rl-nav',        'failure-composition', 'rl-nav-failure-modes', 'final/figures/a2_failure_composition.png'),
+    ('rl-nav',        'success-heatmap',     'rl-nav-failure-modes', 'final/figures/a1_success_heatmap.png'),
 ]
 
 # Video posters: frame 0 of each source GIF, at the GIF's NATIVE width.
@@ -62,6 +67,8 @@ POSTERS = [
     ('architech',     'city',        '-ArchiTech-', 'demo/demo.gif'),
     ('architech',     'city-2',      '-ArchiTech-', 'demo/demo2.gif'),
     ('congestion-rl', 'intersection', 'Congestion-Control-With-RL', 'congestion-control.gif'),
+    ('rl-nav',        'freezing',     'rl-nav-failure-modes', 'freezing.gif'),
+    ('rl-nav',        'collisions',   'rl-nav-failure-modes', 'collisions.gif'),
 ]
 
 def fit(im, target_w):
@@ -74,13 +81,23 @@ def fit(im, target_w):
 
 
 def main():
+    # Optional project filter: `python tools/vendor-stills.py rl-nav` touches
+    # only that project's files. Re-encoding everything for one new project
+    # rewrites every other WebP too, and the diff then hides what changed.
+    only = set(sys.argv[1:])
+    stills = [s for s in STILLS if not only or s[0] in only]
+    posters = [p for p in POSTERS if not only or p[0] in only]
+    if only and not (stills or posters):
+        print(f'nothing matches {sorted(only)}; projects are: {sorted({s[0] for s in STILLS + POSTERS})}')
+        return 1
+
     total_before = total_after = 0
     failures = []
 
     print(f'{"asset":34} {"source":>10} {"webp":>10}  dimensions')
     print('-' * 74)
 
-    for proj, name, repo, path in STILLS:
+    for proj, name, repo, path in stills:
         dest = OUT / proj / f'{name}.webp'
         try:
             raw = fetch(repo, path)
@@ -99,7 +116,7 @@ def main():
         print(f'{proj + "/" + name:34} {len(raw)/1e6:9.2f}M {after/1e6:9.2f}M  {im.width}x{im.height}')
 
     print('\n--- video posters (frame 0, native width) ---')
-    for proj, name, repo, path in POSTERS:
+    for proj, name, repo, path in posters:
         dest = OUT / proj / f'{name}.webp'
         was = dest.stat().st_size if dest.exists() else 0
         try:

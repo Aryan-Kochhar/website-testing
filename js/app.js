@@ -232,7 +232,11 @@ function renderDetail(id) {
         ${shots ? `<div class="demo-stack">${shots}</div>` : ''}
         <p class="detail-body r-up">${esc(p.long)}</p>
         <div class="detail-links r-up">
-          <a class="btn btn--solid" data-magnetic href="${esc(p.url)}" target="_blank" rel="noopener">
+          ${p.live ? `
+          <a class="btn btn--solid" data-magnetic href="${esc(p.live)}" target="_blank" rel="noopener">
+            Try it live <span class="btn__arrow">↗</span>
+          </a>` : ''}
+          <a class="btn ${p.live ? 'btn--ghost' : 'btn--solid'}" data-magnetic href="${esc(p.url)}" target="_blank" rel="noopener">
             View source on GitHub <span class="btn__arrow">↗</span>
           </a>
           ${p.watch ? `
@@ -251,7 +255,36 @@ function renderDetail(id) {
   return true;
 }
 
+/* A project link that leads nowhere — a typo, an old URL, a renamed repo.
+   Previously this quietly dropped you on the home scroll with the bad URL
+   still in the address bar, which reads like the link worked and the page
+   forgot what it was doing. Now it says so, and offers the real menu. */
+function renderMissing(id) {
+  const shown = id.length > 40 ? `${id.slice(0, 39)}…` : id;
+  detail.innerHTML = `
+    <section class="section" style="padding-top:clamp(120px,18vh,200px)">
+      <div class="wrap wrap--narrow">
+        <div class="kicker r-fade">404 · not on the menu</div>
+        <h1 class="detail-title" data-scramble>We don't serve <em>that</em> here.</h1>
+        <p class="detail-body r-up">There's no project called “${esc(shown)}”. Maybe it's still brewing. Here's what is on the menu today:</p>
+        <div class="menu-list r-up">
+          ${PROJECTS.map((p) => `<button class="tag menu-list__item" data-open="${esc(p.id)}">${esc(p.label || p.name)}</button>`).join('')}
+        </div>
+        <button class="btn btn--solid" data-back data-magnetic>Back to the home page <span class="btn__arrow">→</span></button>
+      </div>
+    </section>`;
+
+  detail.querySelector('[data-back]').addEventListener('click', () => go('#/'));
+  for (const b of detail.querySelectorAll('[data-open]')) {
+    b.addEventListener('click', () => go(`#/p/${b.dataset.open}`));
+  }
+  detail._io = initReveals(detail);
+  initMagnetic(detail);
+}
+
 /* ---------------------------------------------------------------- router --- */
+
+const SITE_TITLE = document.title;
 
 function paint(hash) {
   const m = /^#\/p\/(.+)$/.exec(hash || '');
@@ -268,13 +301,20 @@ function paint(hash) {
     try { id = decodeURIComponent(m[1]); } catch { id = m[1]; }
   }
 
-  if (id && renderDetail(id)) {
+  if (id) {
+    const project = PROJECTS.find((x) => x.id === id);
+    if (project) renderDetail(id);
+    else renderMissing(id);
+    // A shared project link should say what it is in the tab, not just the
+    // site's name.
+    document.title = project ? `${project.name} — Aryan Kochhar` : `Not on the menu — Aryan Kochhar`;
     home.hidden = true;
     detail.hidden = false;
   } else {
     detail.hidden = true;
     detail.innerHTML = '';
     home.hidden = false;
+    document.title = SITE_TITLE;
   }
 
   window.scrollTo(0, 0);

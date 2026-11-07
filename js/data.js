@@ -28,6 +28,49 @@ export const PROJECTS = [
     ],
   },
   {
+    id: 'rl-nav-failure-modes',
+    name: 'PPO Failure Modes',
+    url: 'https://github.com/Aryan-Kochhar/rl-nav-failure-modes',
+    short:
+      'A study of where reinforcement-learning navigation breaks when the world shifts: a PPO policy trained in one environment and tested in all 27, every failure labelled against a taxonomy fixed in advance, and the freezing-versus-collision trade-off traced to its knee.',
+    long:
+      'Train a PPO navigation policy at one cell of a 3×3×3 grid — obstacle speed × density × motion pattern — then drop it into all 27 and study how it fails. Study A labels every failed episode against a taxonomy fixed before the full run, so the categories can’t bend to fit the results, and defines freezing carefully enough to tell it apart from sensibly yielding. Study B sweeps the safety weight and finds the knee of the freezing–collision frontier, with bootstrap confidence intervals. A*, fixed-safety PPO and adaptive-risk PPO run on the same grid as baselines, and every number in the paper is filled in from the results by script rather than typed by hand. Co-written with Ankit Dey, Eshaan Dinesh and Mohan Ram Sridhar at VIT Chennai.',
+    tags: ['Python', 'Reinforcement Learning', 'PyTorch', 'Research'],
+    demos: [
+      { type: 'video', src: 'assets/demos/rl-nav/freezing.webm',   poster: 'assets/demos/rl-nav/freezing.webp',   caption: 'Freezing in a dense cell: a clear move exists, and the robot won’t take it' },
+      { type: 'video', src: 'assets/demos/rl-nav/collisions.webm', poster: 'assets/demos/rl-nav/collisions.webp', caption: 'The other end of the trade-off: collisions' },
+      { type: 'image', src: 'assets/demos/rl-nav/frontier.webp',            caption: 'The freezing–collision frontier, one curve per cell, knee starred' },
+      { type: 'image', src: 'assets/demos/rl-nav/failure-composition.webp', caption: 'What each failure actually was, cell by cell' },
+      { type: 'image', src: 'assets/demos/rl-nav/success-heatmap.webp',     caption: 'Success rate across all 27 environment cells' },
+    ],
+  },
+  {
+    id: 'quakeflow',
+    name: 'QuakeFlow',
+    url: 'https://github.com/Aryan-Kochhar/Quakeflow',
+    short:
+      'An incremental ELT pipeline for live global earthquake data: USGS events validated with pydantic, loaded idempotently into DuckDB, modelled by dbt into tested marts, and shown on a Streamlit dashboard.',
+    long:
+      'Earthquake data is messy in ways toy datasets aren’t, and the pipeline is built around that. USGS keeps revising events for days, so every run re-reads a lookback window and only overwrites a row when the revision is newer. The API caps a query at 20,000 events, so busy windows are bisected until they fit instead of being silently truncated. Bad records go to a quarantine table rather than vanishing, the watermark only advances after a fully successful run, and 20+ dbt tests check the numbers — one of which caught USGS sending a status in the wrong case. The first backfill loaded 10,029 real events in about 27 seconds.',
+    tags: ['Python', 'DuckDB', 'dbt', 'Data Engineering'],
+    demos: [],
+  },
+  {
+    id: 'typeform-clone',
+    name: 'Typeform Clone',
+    url: 'https://github.com/Aryan-Kochhar/Scaler-AI-Typeform-Builder-Clone',
+    live: 'https://scaler-ai-typeform-builder-clone.vercel.app',
+    short:
+      'A full-stack clone of Typeform: a three-pane drag-and-drop builder with a live preview, nine question types, logic jumps and themes, a public one-question-at-a-time respondent flow, and per-question results.',
+    long:
+      'Build a form in a three-pane editor — question list, live canvas, settings — with drag-and-drop reordering that works from the keyboard too, inline editing right on the canvas, nine question types including file upload, and autosave. Logic jumps send each answer to a later question or straight to the end, and skipped questions are enforced on the server as well as in the browser. Publish to a public link and respondents get the familiar one-question-at-a-time flow, no login needed. Next.js 16 and Tailwind on Vercel, FastAPI with SQLAlchemy and SQLite on Render — whose free tier sleeps, so the live demo can take up to a minute to wake.',
+    tags: ['TypeScript', 'Next.js', 'FastAPI', 'SQLite'],
+    demos: [
+      // Captured from the live deployment with headless Edge; the repo itself ships no screenshots.
+      { type: 'image', src: 'assets/demos/typeform-clone/workspace.webp', caption: 'The workspace: drafts, published forms and response counts' },
+    ],
+  },
+  {
     id: 'quant-copilot',
     name: 'Quant Copilot',
     url: 'https://github.com/Aryan-Kochhar/Agentic-Quantitative-Research-Copilot',

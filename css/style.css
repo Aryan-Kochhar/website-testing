@@ -735,6 +735,18 @@ a { color: var(--shock); text-decoration: none; }
   color: var(--muted); max-width: 62ch; margin-bottom: 32px;
 }
 .detail-links { display: flex; gap: 14px; flex-wrap: wrap; }
+.detail-title em { font-style: normal; color: var(--shock); text-shadow: 3px 3px 0 var(--accent); }
+
+/* The 404's "what is on the menu" list — project tags you can click. */
+.menu-list { display: flex; flex-wrap: wrap; gap: 8px; margin: -10px 0 32px; }
+.menu-list__item {
+  font-size: 10.5px; padding: 6px 12px; cursor: pointer;
+  transition: background .2s var(--ease), color .2s var(--ease), transform .16s var(--ease);
+}
+.menu-list__item:hover {
+  background: var(--accent); color: var(--stamp); border-color: var(--stamp);
+  transform: translateY(-2px);
+}
 
 /* -------------------------------------------------------------- contact --- */
 
