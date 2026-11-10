@@ -8,6 +8,7 @@ GitHub Pages as-is.
 
 ```
 index.html          the whole home scroll, as real markup
+jitters/index.html  standalone toy: the site after 47 espressos (self-contained)
 css/style.css       design tokens + components
 js/fluid.js         the hero shader (WebGL)
 js/motion.js        reveals, cursor, parallax, text glitch

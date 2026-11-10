@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THE JITTERS — one more shot</title>
+<meta name="description" content="A website that drinks 47 espressos while you watch. Every shot makes it worse.">
+<meta name="theme-color" content="#1a0f08">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#9749;</text></svg>">
+<style>
+:root{
+  --hue:28;
+  --acc:hsl(var(--hue) 95% 60%);
+  --ink:#fff4e6;
+  --bean:#1a0f08;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{
+  background:var(--bean);color:var(--ink);overflow:hidden;
+  font-family:"Bricolage Grotesque",system-ui,sans-serif;
+  touch-action:manipulation;-webkit-user-select:none;user-select:none;
+}
+/* If WebGL is missing the page still gets a moving backdrop. */
+body.nogl{background:linear-gradient(120deg,#1a0f08,#6b3f22,#1a0f08);background-size:300% 300%;animation:drift 12s ease-in-out infinite}
+@keyframes drift{50%{background-position:100% 50%}}
+
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+#gl{z-index:0}
+#fx{z-index:3;pointer-events:none}
+
+#stage{position:fixed;inset:0;z-index:1;display:grid;grid-template-rows:auto 1fr auto;will-change:transform}
+
+.bar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;padding:.8rem clamp(.8rem,3vw,1.6rem)}
+.bar .gap{flex:1}
+.chip{
+  font:500 .78rem/1 var(--mono);color:var(--ink);text-decoration:none;
+  background:rgba(26,15,8,.82);border:1px solid rgba(255,244,230,.28);
+  padding:.6em .95em;border-radius:999px;cursor:pointer;white-space:nowrap;
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+}
+span.chip{cursor:default}
+.chip b{color:var(--acc);font-size:1.15em}
+.chip i{font-style:normal;opacity:.6}
+.chip:hover{border-color:var(--acc)}
+:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+
+main{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:clamp(.7rem,2.2vh,1.4rem);text-align:center;padding:0 clamp(.8rem,4vw,3rem);min-height:0;
+}
+.status{
+  font:500 clamp(.8rem,1.6vw,1rem)/1.3 var(--mono);
+  background:rgba(26,15,8,.82);border-left:4px solid var(--acc);
+  padding:.55em .9em;max-width:42ch;
+}
+h1{
+  font-weight:800;line-height:.92;letter-spacing:-.03em;text-transform:uppercase;
+  font-size:clamp(2.6rem,min(12.5vw,20vh),10rem);
+  color:var(--ink);
+  -webkit-text-stroke:.035em var(--bean);paint-order:stroke fill;
+  text-shadow:.045em .06em 0 var(--bean),.09em .12em 0 var(--acc);
+}
+.w{display:inline-block;white-space:nowrap}
+.l{display:inline-block;will-change:transform}
+
+#shotwrap{transition:transform .16s cubic-bezier(.2,1.5,.4,1)}
+.shot{
+  display:inline-flex;align-items:center;gap:.5em;cursor:pointer;
+  font:800 clamp(1.1rem,3.2vw,1.9rem)/1 "Bricolage Grotesque",system-ui,sans-serif;
+  color:var(--bean);background:var(--acc);
+  border:3px solid var(--bean);border-radius:999px;padding:.7em 1.3em;
+  box-shadow:0 .32em 0 var(--bean);
+}
+.shot:active{transform:translateY(.2em);box-shadow:0 .12em 0 var(--bean)}
+.shot__cup{font-size:1.25em}
+
+.hint{font:400 .74rem/1.5 var(--mono);opacity:.9;background:rgba(26,15,8,.7);padding:.35em .8em;border-radius:6px;max-width:60ch}
+
+.vitals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5rem;width:min(760px,100%)}
+.vitals div{background:rgba(26,15,8,.82);border:1px solid rgba(255,244,230,.2);padding:.6rem .5rem;border-radius:10px}
+.vitals dt{font:400 .66rem/1 var(--mono);opacity:.7;text-transform:uppercase;letter-spacing:.08em}
+.vitals dd{font-weight:800;font-size:clamp(.95rem,2.2vw,1.35rem);margin-top:.35em;color:var(--acc);font-variant-numeric:tabular-nums}
+@media (max-width:560px){.vitals{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.tapes{position:relative;height:clamp(64px,11vh,96px);opacity:0;transition:opacity .6s;pointer-events:none}
+.s3 .tapes{opacity:1}
+.tape{
+  position:absolute;left:-5vw;width:110vw;overflow:hidden;white-space:nowrap;
+  background:var(--acc);color:var(--bean);border-block:3px solid var(--bean);
+  font-weight:800;font-size:clamp(.85rem,1.9vw,1.2rem);padding:.3em 0;
+}
+.tape--a{top:0;transform:rotate(-1.6deg)}
+.tape--b{bottom:8px;transform:rotate(1.3deg);background:var(--ink)}
+.tape span{display:inline-block;will-change:transform}
+
+#pops{position:fixed;inset:0;z-index:4;pointer-events:none}
+.pop{
+  position:absolute;width:min(300px,80vw);pointer-events:auto;
+  background:var(--ink);color:var(--bean);border:3px solid var(--bean);box-shadow:8px 8px 0 var(--bean);
+  font:500 .82rem/1.45 var(--mono);rotate:var(--r,0deg);
+  animation:pop .28s cubic-bezier(.2,1.6,.4,1);
+}
+@keyframes pop{from{transform:scale(.5);opacity:0}}
+.pop__bar{display:flex;justify-content:space-between;align-items:center;gap:.5em;background:var(--acc);padding:.3em .3em .3em .7em;font-weight:700;cursor:grab;border-bottom:3px solid var(--bean);touch-action:none}
+.pop__body{padding:.9em .8em}
+.pop__btns{display:flex;gap:.5em;padding:0 .8em .8em}
+.pop button{font:700 .8rem/1 var(--mono);border:2px solid var(--bean);background:var(--bean);color:var(--ink);padding:.5em .9em;cursor:pointer}
+.pop .pop__x{background:none;color:var(--bean);border:0;font-size:1rem;padding:.3em .5em}
+</style>
+</head>
+<body>
+
+<canvas id="gl" aria-hidden="true"></canvas>
+
+<div id="stage">
+  <header class="bar">
+    <a class="chip" href="../">&larr; the calm site</a>
+    <span class="chip">shots <b id="nShots">0</b><i>/47</i></span>
+    <span class="gap"></span>
+    <button class="chip" id="mute" aria-pressed="false">sound: on</button>
+    <button class="chip" id="decaf">decaf (reset)</button>
+  </header>
+
+  <main>
+    <p class="status" id="status" role="status">You are calm. Suspiciously calm.</p>
+    <h1 id="title"></h1>
+    <div id="shotwrap">
+      <button class="shot" id="shot"><span class="shot__cup" aria-hidden="true">&#9749;</span><span>PULL A SHOT</span></button>
+    </div>
+    <p class="hint" id="hint">click &middot; tap &middot; space &middot; hold to pour. It gets loud to look at (lots of motion, no strobing). Decaf undoes everything.</p>
+    <dl class="vitals">
+      <div><dt>heart rate</dt><dd id="vBpm">60 bpm</dd></div>
+      <div><dt>hours awake</dt><dd id="vAwake">0.0 h</dd></div>
+      <div><dt>blinks</dt><dd id="vBlink">17 / min</dd></div>
+      <div><dt>typing speed</dt><dd id="vType">40 wpm</dd></div>
+    </dl>
+  </main>
+
+  <div class="tapes" aria-hidden="true">
+    <div class="tape tape--a"><span id="tapeA"></span></div>
+    <div class="tape tape--b"><span id="tapeB"></span></div>
+  </div>
+</div>
+
+<canvas id="fx" aria-hidden="true"></canvas>
+<div id="pops"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const smooth = (a, b, x) => { x = clamp((x - a) / (b - a), 0, 1); return x * x * (3 - 2 * x); };
+
+const MAX = 47;
+// Reduced-motion visitors get the half-caf version: same page, a fifth of the movement.
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const M = calm ? 0.2 : 1;
+
+const STAGES = [
+  [0,  'You are calm. Suspiciously calm.'],
+  [1,  'Ah. There it is.'],
+  [3,  'Typing speed: yes.'],
+  [6,  'The button has developed opinions about being clicked.'],
+  [10, 'Gravity is now a suggestion.'],
+  [15, 'Your body has opened several support tickets.'],
+  [22, 'You can hear the colour orange. Closing a ticket now opens two.'],
+  [30, 'Time is a flat white.'],
+  [40, 'Nearly there. Do not blink. You could not if you tried.'],
+  [47, 'YOU ARE NOW COFFEE.'],
+];
+const TITLES = [
+  [0,  'One more shot.'],
+  [10, 'Just one more.'],
+  [22, "I'm fine."],
+  [30, 'I AM FINE!!'],
+  [40, 'What is sleep'],
+  [47, 'You are now coffee.'],
+];
+const POPS = [
+  ['sleep.exe',   'Sleep has stopped responding. Wait for it? It is not coming.'],
+  ['heart.sys',   'Your heart has requested a 1:1. Subject line: "concerns".'],
+  ['hands.dll',   'Hands are vibrating at a frequency only dogs can complain about.'],
+  ['calendar',    'It is somehow both 4am and Tuesday.'],
+  ['brain.tmp',   '47 tabs open. 46 of them are this one.'],
+  ['barista',     'The barista knows your name. And your blood type. It is espresso.'],
+  ['eyelids',     'Eyelids not found. Proceed anyway?'],
+  ['idea.new',    'New idea detected: what if coffee, but faster.'],
+  ['left-leg',    'Left leg is bouncing at 140 bpm and has started a band.'],
+];
+const EMO = ['☕', '⚡', '🫨', '👁️', '💥', '🥐', '⏰'];
+
+// ---- state ----
+let shots = 0, k = 0, kS = 0;            // k: caffeine 0..1, kS: eased
+let flow = 0, ring = 0, jit = 0, tSec = 0, kick = 0, hue = 28;
+let muted = false, ac = null, curTitle = '', letters = [];
+let bx = 0, by = 0, tired = 0, lastDodge = 0, popN = 0, popZ = 1, rain = 0, tapeOff = 0, tapeHalf = [1, 1];
+let W = innerWidth, H = innerHeight;
+const mouse = { x: W / 2, y: H / 2 };
+const parts = [];
+
+const stage = $('stage'), shotBtn = $('shot'), wrap = $('shotwrap'), popBox = $('pops');
+
+// ---- headline: one span per letter so each can shake on its own ----
+function setTitle(text) {
+  const h = $('title');
+  h.textContent = ''; h.setAttribute('aria-label', text); letters = [];
+  text.split(' ').forEach(word => {
+    const w = document.createElement('span');
+    w.className = 'w'; w.setAttribute('aria-hidden', 'true');
+    for (const ch of word) {
+      const l = document.createElement('span');
+      l.className = 'l'; l.textContent = ch; w.appendChild(l);
+      letters.push({ el: l, a: Math.random() * 6.28, b: Math.random() * 6.28, f: 0.7 + Math.random() * 0.8 });
+    }
+    h.appendChild(w); h.appendChild(document.createTextNode(' '));
+  });
+}
+
+function pick(table) { let r = table[0]; for (const s of table) if (shots >= s[0]) r = s; return r[1]; }
+
+function sync() {
+  k = Math.min(shots / MAX, 1);
+  $('nShots').textContent = shots;
+  const st = shots > MAX ? shots + ' shots. The coffee is drinking you now.' : pick(STAGES);
+  if ($('status').textContent !== st) $('status').textContent = st;
+  const tt = pick(TITLES);
+  if (tt !== curTitle) { curTitle = tt; setTitle(tt); }
+  $('vBpm').textContent = (60 + shots * 7) + ' bpm';
+  $('vAwake').textContent = (shots * 1.7).toFixed(1) + ' h';
+  const bl = Math.max(0, Math.round(17 - shots * 0.4));
+  $('vBlink').textContent = bl ? bl + ' / min' : '0 (lids missing)';
+  $('vType').textContent = (40 + shots * shots) + ' wpm';
+  document.body.classList.toggle('s3', shots >= 3);
+  document.title = shots ? '(' + shots + ') THE JITTERS' : 'THE JITTERS — one more shot';
+}
+
+// ---- sound: a rising blip per shot, plus a heartbeat that speeds up ----
+function tone(f0, f1, dur, vol, type) {
+  if (muted || !ac) return;
+  const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur * 0.6);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+function blip() {
+  if (muted) return;
+  if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { muted = true; return; } }
+  if (ac.state === 'suspended') ac.resume();
+  const f = 196 * Math.pow(2, (shots % 25) / 12);
+  tone(f, f * 2, 0.26, 0.1, 'triangle');
+}
+(function beat() {
+  setTimeout(beat, 60000 / Math.min(60 + shots * 7, 230));
+  if (shots && !document.hidden) tone(72, 40, 0.13, 0.2, 'sine');
+})();
+
+// ---- particles ----
+function add(x, y, vx, vy, kind) {
+  if (parts.length > 420) parts.shift();
+  parts.push({
+    x, y, vx, vy, kind, age: 0,
+    r: kind === 'e' ? 13 + Math.random() * 15 : 5 + Math.random() * 6,
+    rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 9,
+    life: kind === 't' ? 0.55 : 5 + Math.random() * 4,
+    ch: EMO[(Math.random() * EMO.length) | 0], hue: Math.random() * 70,
+  });
+}
+function burst(x, y, n) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * 6.28, s = 200 + Math.random() * 520;
+    add(x, y, Math.cos(a) * s, Math.sin(a) * s - 220, Math.random() < 0.28 ? 'e' : 'b');
+  }
+}
+
+const fx = $('fx'), c2 = fx.getContext('2d');
+function stepParts(dt) {
+  const floor = shots >= 10;   // from ten shots on, things land and pile up
+  if (floor) {
+    rain += dt * (2 + 26 * k) * M;
+    while (rain > 1) { rain--; add(Math.random() * W, -30, (Math.random() - 0.5) * 220, Math.random() * 200, Math.random() < 0.5 ? 'e' : 'b'); }
+  }
+  c2.clearRect(0, 0, W, H);
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    p.age += dt;
+    if (p.age > p.life || p.y > H + 90) { parts.splice(i, 1); continue; }
+    if (p.kind !== 't') {
+      p.vy += 1400 * dt;
+      const dx = p.x - mouse.x, dy = p.y - mouse.y, d2 = dx * dx + dy * dy;
+      if (d2 < 16000 && d2 > 1) { const d = Math.sqrt(d2), f = (1 - d / 127) * 2600 * dt; p.vx += dx / d * f; p.vy += dy / d * f; }
+      p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+      if (floor) {
+        if (p.y > H - p.r) { p.y = H - p.r; p.vy *= -0.55; p.vx *= 0.82; p.vr *= 0.8; if (Math.abs(p.vy) < 40) p.vy = 0; }
+        if (p.x < p.r) { p.x = p.r; p.vx *= -0.6; }
+        if (p.x > W - p.r) { p.x = W - p.r; p.vx *= -0.6; }
+      }
+    }
+    c2.globalAlpha = clamp((p.life - p.age) / 0.6, 0, 1);
+    if (p.kind === 't') {
+      c2.fillStyle = 'hsl(' + hue + ' 95% 60%)';
+      c2.beginPath(); c2.arc(p.x, p.y, 5 * (1 - p.age / p.life) + 1, 0, 6.28); c2.fill();
+      continue;
+    }
+    c2.save(); c2.translate(p.x, p.y); c2.rotate(p.rot);
+    if (p.kind === 'e') {
+      c2.font = (p.r * 2) + 'px serif'; c2.textAlign = 'center'; c2.textBaseline = 'middle';
+      c2.fillText(p.ch, 0, 0);
+    } else {
+      c2.fillStyle = kS > 0.4 ? 'hsl(' + (hue + p.hue) + ' 90% 60%)' : '#7a4a28';
+      c2.strokeStyle = '#fff4e6'; c2.lineWidth = 1.5;
+      c2.beginPath(); c2.ellipse(0, 0, p.r, p.r * 0.65, 0, 0, 6.28); c2.fill(); c2.stroke();
+      c2.beginPath(); c2.moveTo(-p.r * 0.7, 0); c2.quadraticCurveTo(0, p.r * 0.35, p.r * 0.7, 0); c2.stroke();
+    }
+    c2.restore();
+  }
+  c2.globalAlpha = 1;
+}
+
+// ---- the backdrop: coffee being stirred, then losing the plot ----
+const glc = $('gl');
+const gl = glc.getContext('webgl', { antialias: false, powerPreference: 'high-performance' });
+let U = null;
+const FS = `precision highp float;
+uniform vec2 r,m;uniform float t,u,k;
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+ return mix(mix(h(i),h(i+vec2(1.,0.)),f.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),f.x),f.y);}
+float fbm(vec2 p){float a=.5,s=0.;for(int i=0;i<5;i++){s+=a*n(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return s;}
+void main(){
+ float mn=min(r.x,r.y);
+ vec2 uv=(gl_FragCoord.xy-.5*r)/mn,mm=(m-.5*r)/mn;
+ uv+=.35*k*(uv-mm)*exp(-4.*dot(uv-mm,uv-mm));
+ float d=length(uv),a=atan(uv.y,uv.x);
+ float sa=1.0472,fa=abs(mod(a+t*.1,sa)-sa*.5);
+ uv=mix(uv,d*vec2(cos(fa),sin(fa)),smoothstep(.5,.95,k));
+ float ang=(1.2+3.*k)*exp(-d*1.2)+t*.3;
+ float c=cos(ang),s=sin(ang);
+ uv=mat2(c,-s,s,c)*uv;
+ vec2 q=uv*(1.6+2.*k);
+ vec2 w=vec2(fbm(q+t*.5),fbm(q+vec2(5.2,1.3)-t*.4));
+ float f=fbm(q+(1.5+2.5*k)*w);
+ float rings=.5+.5*sin(d*(6.+14.*k)-u);
+ f=mix(f,f*.6+rings*.4,smoothstep(.3,1.,k));
+ vec3 coffee=mix(vec3(.10,.055,.03),vec3(.78,.60,.42),smoothstep(.3,.75,f))+vec3(1.,.93,.82)*smoothstep(.7,.82,f)*.4;
+ vec3 neon=(.5+.5*cos(6.2831*(f*1.5+vec3(0.,.33,.67))+t*.4))*(.6+.4*sin(f*22.));
+ vec3 col=mix(coffee,neon,smoothstep(.2,.85,k));
+ col*=1.-.4*d;
+ gl_FragColor=vec4(col,1.);
+}`;
+function shader(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.error(gl.getShaderInfoLog(s)); return null; }
+  return s;
+}
+if (gl) {
+  const v = shader(gl.VERTEX_SHADER, 'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}');
+  const f = shader(gl.FRAGMENT_SHADER, FS);
+  const p = gl.createProgram();
+  if (v && f) {
+    gl.attachShader(p, v); gl.attachShader(p, f); gl.linkProgram(p);
+    if (gl.getProgramParameter(p, gl.LINK_STATUS)) {
+      gl.useProgram(p);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+      const loc = gl.getAttribLocation(p, 'a');
+      gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+      U = {}; for (const name of ['r', 'm', 't', 'u', 'k']) U[name] = gl.getUniformLocation(p, name);
+    }
+  }
+}
+if (!U) document.body.classList.add('nogl');
+
+let glScale = 1;
+function resize() {
+  W = innerWidth; H = innerHeight;
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  fx.width = W * dpr; fx.height = H * dpr; c2.setTransform(dpr, 0, 0, dpr, 0, 0);
+  glScale = Math.min(devicePixelRatio || 1, 1.25);
+  glc.width = Math.max(1, W * glScale | 0); glc.height = Math.max(1, H * glScale | 0);
+  if (U) gl.viewport(0, 0, glc.width, glc.height);
+  measureTapes();
+}
+
+// ---- ticker tapes ----
+const TAPE = ' ONE MORE SHOT ✦ DECAF IS A RUMOUR ✦ SLEEP IS FOR THE UNDER-CAFFEINATED ✦ I CAN STOP WHENEVER I WANT ✦ MY HANDS ARE FINE ✦';
+const tapeEls = [$('tapeA'), $('tapeB')];
+tapeEls.forEach((el, i) => { const s = (i ? TAPE.split('✦').reverse().join('✦') : TAPE).repeat(4); el.textContent = s + s; });
+function measureTapes() { tapeEls.forEach((el, i) => { tapeHalf[i] = Math.max(1, el.offsetWidth / 2); }); }
+
+// ---- the shot ----
+function pull() {
+  shots++; kick = 1; tired = 0;
+  blip();
+  const r = shotBtn.getBoundingClientRect();
+  burst(r.left + r.width / 2, r.top + r.height / 2, 10 + Math.min(shots, 30));
+  if (shots === MAX) finale();
+  else if (shots >= 15) spawnPop();
+  sync();
+}
+function finale() {
+  popBox.textContent = '';
+  for (let i = 0; i < 7; i++) setTimeout(() => burst(Math.random() * W, Math.random() * H * 0.6, 40), i * 170);
+  $('hint').textContent = 'You have peaked. Decaf brings you back down, or keep pouring. Nobody here can stop you.';
+}
+function decaf() {
+  shots = 0; kick = 0; bx = by = 0; tired = 0;
+  wrap.style.transform = ''; popBox.textContent = ''; parts.length = 0;
+  $('hint').textContent = 'Back to baseline. click · tap · space · hold to pour.';
+  sync();
+}
+
+shotBtn.addEventListener('click', pull);
+$('decaf').addEventListener('click', decaf);
+$('mute').addEventListener('click', e => {
+  muted = !muted;
+  e.currentTarget.textContent = 'sound: ' + (muted ? 'off' : 'on');
+  e.currentTarget.setAttribute('aria-pressed', String(muted));
+});
+
+// hold to pour
+let holdT = null, holdI = null;
+const endHold = () => { clearTimeout(holdT); clearInterval(holdI); holdT = holdI = null; };
+shotBtn.addEventListener('pointerdown', () => { endHold(); holdT = setTimeout(() => { holdI = setInterval(pull, 130); }, 450); });
+addEventListener('pointerup', endHold); addEventListener('pointercancel', endHold); addEventListener('blur', endHold);
+
+addEventListener('keydown', e => {
+  if (e.code === 'Escape') { popBox.textContent = ''; return; }
+  if (e.code !== 'Space' || e.target.closest('button, a')) return;
+  e.preventDefault(); pull();
+});
+
+// From six shots the button flinches away from the mouse. It tires after a few
+// dodges so it can always be caught, and the keyboard never has to chase it.
+function dodge(e) {
+  if (shots < 6 || calm || e.pointerType !== 'mouse' || holdI) return;
+  if (tired >= 1 + Math.floor(shots / 12) || performance.now() - lastDodge < 240) return;
+  const r = shotBtn.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const dx = cx - e.clientX, dy = cy - e.clientY;
+  if (Math.hypot(dx, dy) > Math.max(r.width, r.height) / 2 + 50) return;
+  const a = Math.atan2(dy, dx) + (Math.random() - 0.5) * 1.4, s = 170 + Math.random() * 140;
+  const nx = clamp(cx + Math.cos(a) * s, r.width / 2 + 12, W - r.width / 2 - 12);
+  const ny = clamp(cy + Math.sin(a) * s, r.height / 2 + 70, H - r.height / 2 - 12);
+  bx += nx - cx; by += ny - cy; tired++; lastDodge = performance.now();
+  wrap.style.transform = 'translate(' + bx.toFixed(0) + 'px,' + by.toFixed(0) + 'px)';
+}
+
+let drag = null;
+addEventListener('pointermove', e => {
+  mouse.x = e.clientX; mouse.y = e.clientY;
+  if (drag) { drag.pop.style.left = (e.clientX - drag.dx) + 'px'; drag.pop.style.top = (e.clientY - drag.dy) + 'px'; return; }
+  if (shots >= 3 && !calm) add(e.clientX, e.clientY, 0, 0, 't');
+  dodge(e);
+});
+addEventListener('pointerup', () => { drag = null; });
+
+// ---- support tickets (popups). From 22 shots, closing one opens two. ----
+function spawnPop() {
+  if (popBox.children.length >= 12) return;
+  const [title, msg] = POPS[popN++ % POPS.length];
+  const el = document.createElement('div');
+  el.className = 'pop'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', title);
+  el.innerHTML = '<div class="pop__bar"><span>' + title + '</span><button class="pop__x" aria-label="Close">✕</button></div>' +
+    '<div class="pop__body">' + msg + '</div><div class="pop__btns"><button>OK</button><button>ALSO OK</button></div>';
+  el.style.left = (Math.random() * Math.max(10, W - 320)) + 'px';
+  el.style.top = (64 + Math.random() * Math.max(10, H - 280)) + 'px';
+  el.style.setProperty('--r', (Math.random() * 8 - 4).toFixed(1) + 'deg');
+  el.style.zIndex = ++popZ;
+  popBox.appendChild(el);
+}
+popBox.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const pop = b.closest('.pop'), r = pop.getBoundingClientRect();
+  pop.remove(); burst(r.left + r.width / 2, r.top + r.height / 2, 8);
+  if (shots >= 22 && shots < MAX) { spawnPop(); spawnPop(); }
+});
+popBox.addEventListener('pointerdown', e => {
+  const bar = e.target.closest('.pop__bar'); if (!bar || e.target.closest('button')) return;
+  const pop = bar.parentNode;
+  drag = { pop, dx: e.clientX - pop.offsetLeft, dy: e.clientY - pop.offsetTop };
+  pop.style.zIndex = ++popZ;
+});
+
+// ---- frame ----
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.05); last = now; tSec += dt;
+  kS += (k - kS) * Math.min(1, dt * 3);
+  // Every clock is accumulated, never multiplied by k, so easing k can't make anything jump.
+  const speed = calm ? 0.4 : 1;
+  flow += dt * (0.25 + 2.2 * kS) * speed;
+  ring += dt * (0.6 + 5 * kS) * speed;
+  jit += dt * (3 + 16 * kS);
+  kick *= Math.pow(0.002, dt);
+
+  hue = (28 + (flow * 40 % 360) * smooth(0.3, 0.6, kS)) % 360;
+  document.documentElement.style.setProperty('--hue', hue.toFixed(1));
+
+  const amp = (kS * kS * 30 + kS * 4) * M, rot = kS * 22 * M, sc = (1 + kick * 0.12).toFixed(3);
+  for (const L of letters) {
+    const x = Math.sin(jit * L.f + L.a) * amp, y = Math.cos(jit * L.f * 1.13 + L.b) * amp, r = Math.sin(jit * 0.7 * L.f + L.b) * rot;
+    L.el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) rotate(' + r.toFixed(1) + 'deg) scale(' + sc + ')';
+  }
+
+  const tilt = Math.sin(tSec * 0.9) * 6 * smooth(0.4, 1, kS) * M;
+  const sx = ((Math.random() - 0.5) * kick * 18 + Math.sin(jit * 1.7) * kS * 3) * M;
+  const sy = ((Math.random() - 0.5) * kick * 18 + Math.cos(jit * 1.3) * kS * 3) * M;
+  stage.style.transform = 'translate(' + sx.toFixed(1) + 'px,' + sy.toFixed(1) + 'px) rotate(' + tilt.toFixed(2) + 'deg) scale(' + (1 + kick * 0.015).toFixed(4) + ')';
+
+  if (shots >= 3) {
+    tapeOff += dt * (40 + 500 * kS) * speed;
+    tapeEls[0].style.transform = 'translateX(' + (-(tapeOff % tapeHalf[0])).toFixed(1) + 'px)';
+    tapeEls[1].style.transform = 'translateX(' + (-(tapeHalf[1] - tapeOff % tapeHalf[1])).toFixed(1) + 'px)';
+  }
+
+  if (U) {
+    gl.uniform2f(U.r, glc.width, glc.height);
+    gl.uniform2f(U.m, mouse.x * glScale, (H - mouse.y) * glScale);
+    gl.uniform1f(U.t, flow); gl.uniform1f(U.u, ring); gl.uniform1f(U.k, kS);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+  stepParts(dt);
+  requestAnimationFrame(frame);
+}
+
+addEventListener('resize', resize);
+if (calm) $('hint').textContent = 'click · tap · space · hold to pour. Reduced motion is on, so this is the half-caf version.';
+sync(); resize();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(measureTapes);
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
