@@ -1,118 +1,98 @@
-# aryankochhar.com
+# aryankochhar.in
 
-Personal site. Cream-paper look, a hand-written GLSL hero, and scroll-linked
-motion throughout.
+Personal site. Warm paper, ink, and a blue ballpoint: serif headlines, mono
+labels, handwritten margin notes, and a portrait printed in halftone dots.
 
 No build step and no framework — open `index.html` and it runs. Deploys to
-GitHub Pages as-is.
+GitHub Pages (or any static host) as-is.
 
 ```
-index.html          the whole home scroll, as real markup
-jitters/index.html  standalone toy: the site after 47 espressos (self-contained)
-css/style.css       design tokens + components
-js/fluid.js         the hero shader (WebGL)
-js/motion.js        reveals, cursor, parallax, text glitch
-js/app.js           routing, work index, demo reel, project pages, coffee button
-js/data.js          all copy and project data
+index.html          the home page's standing copy, as real markup
+css/style.css       tokens, layout, components
+js/data.js          projects, the GitHub fallback list, upstream fixes
+js/app.js           rendering, routing, theme, pen marks, lightbox, form
+js/halftone.js      the hero portrait (canvas)
+js/desk.js          the "Ask" dialog
 assets/             photos
 assets/demos/       project demos (WebM + WebP), built by tools/build-demos.py
-tools/build-demos.py  transcodes the project repos' GIFs into the above
+jitters/index.html  standalone toy, linked from the footer as an easter egg
+tools/              scripts that transcode the project repos' GIFs
 ```
 
-## The hero
+## Content
 
-`js/fluid.js` renders cream being poured into coffee: a height field built from
-domain-warped gradient noise, differentiated for surface normals, and shaded as
-a glossy liquid with a key light and a tight specular. One fullscreen triangle,
-one fragment shader.
+`js/data.js` is the only file to touch for projects.
 
-Three things carry it:
+- `featured: true` marks the three projects on the résumé. They run first, as
+  large rows, in the order they appear in the file.
+- Everything else runs as a card. Seven cards plus the "Ask" tile make eight,
+  which fills the grid evenly at four columns, at two, and at one — if you add
+  or remove a project, the last row will be uneven until the count is even
+  again.
+- "Also on GitHub" is fetched live from the GitHub API (public, non-fork repos
+  with a description that are not already a project and not in `WIRE_SKIP`).
+  `WIRE_FALLBACK` is shown when the API is unreachable or rate-limited.
+- `UPSTREAM` is merged pull requests to other people's libraries.
 
-- **Differential rotation.** The field is stirred about the view axis at a rate
-  that falls off with radius, so inner fluid laps outer fluid and straight
-  ribbons shear into a spiral on their own.
-- **Domain warping.** The coordinate is displaced by noise before the height
-  field is sampled, which folds ribbons back through each other instead of
-  leaving concentric rings.
-- **Normals from finite differences.** The relief and the wet highlight are the
-  reason it reads as poured liquid rather than as a gradient.
+The hero, focus areas, about and contact copy live in `index.html`, so they
+survive with JavaScript off.
 
-An earlier revision did this as a volumetric raymarch. It cost roughly 8x as
-much and looked worse — integrating a noise field along a ray averages out
-exactly the detail that makes marbling legible.
+## Layout
 
-It degrades in two stages if it can't hold ~45fps (render scale first, then fbm
-octaves), pauses when scrolled out of view or the tab is hidden, and falls back
-to a CSS gradient with no WebGL or under `prefers-reduced-motion`.
+Three widths: wide (1100px and up), mid (720–1099px) and narrow (phones). Mid
+is a real two-column layout rather than a stretched phone one, because a
+split-screen or side-pane browser lands there.
 
-## Demos
+Every featured project is the same three parts in the same order: a figure, a
+block of text, and a band of numbers across the full width. The figure
+switches sides on alternate rows.
 
-The project repos ship their demos as GIFs — 23MB across the six of them, one
-439 frames long. Nothing that heavy loads on a portfolio, and hotlinking
-`github.com/.../raw/...` is slow and breaks on a rename.
+Every card has the same 16:10 slot on top. A project with no screenshot gets a
+typographic tile of the same size (its headline number, or the shape of what
+it returns) so the rows stay level.
 
-`tools/build-demos.py` trims each one to a ~9s loop and transcodes it: WebM
-(VP8) for the animations, WebP for the stills, plus a WebP poster per video.
-1.65MB total, 93% smaller, and served from this repo.
+The masthead name is sized in container units so it spans the column exactly.
+That only works with Fraunces' optical-size axis pinned — left on auto, the
+letters get wider at small sizes and the name runs off the edge on a phone.
 
-```sh
-DEMO_SRC=~/src python3 tools/build-demos.py
-```
+## The portrait
 
-Videos are `muted loop playsinline` so iOS autoplays them, and an
-IntersectionObserver plays only the ones on screen — a row of six looping
-videos all decoding at once is the difference between a smooth page and a hot
-laptop. Browsers that can't decode VP8 (Safari before 16) show the poster.
+`js/halftone.js` redraws the photo as a 45° halftone screen: one dot per
+lattice point, area proportional to darkness. A second pass in pen-blue sits
+slightly off-register underneath. In dark mode the screen inverts — light dots
+on dark stock — so the picture still reads the right way round.
 
-## Motion
+The real photo is the `<img>` under the canvas. Under the pointer the canvas
+is punched out with a soft-edged hole, so the photo "develops" where you look;
+a click or tap develops the whole frame. It only animates while something is
+changing, and falls back to the plain photo if the canvas can't be read.
 
-Native scroll, with effects linked to scroll position. Scroll is deliberately
-not hijacked — a lerped fake-scroll container breaks keyboard paging, mobile
-momentum, find-in-page and anchor restoration. Everything animated is
-transform, opacity or a sliding curtain, so none of it touches layout, and one
-shared `requestAnimationFrame` loop drives the per-frame work.
+## Pen marks
 
-The cursor is a grid cell, not a blob near one. The viewport is divided into
-near-square cells of ~78px, and the highlight takes the exact bounds of
-whichever cell the pointer is inside — placed at `col * cellW, row * cellH`
-and sized `cellW x cellH` — so it snaps cell to cell and its edges always
-line up. Two hairlines track the cell's own top and left edges, which makes
-the grid readable rather than merely implied. Over a small interactive target
-the cell leaves the grid and takes that element's bounding box instead.
+Elements with `data-pen="circle"` or `data-pen="under"` get an SVG drawn around
+them by `app.js`, sized 1:1 in pixels so the stroke never scales, and redrawn
+on resize. The `.pen` rule sets `max-width: none` on purpose: a circle is wider
+than the word it goes round, and a global `svg { max-width: 100% }` squashes it.
 
-Nothing about it scales with pointer speed, which was a deliberate reversal:
-sizing the box by speed is exactly what breaks the alignment, because the box
-ends up centred near a grid point at an arbitrary size, lining up with
-nothing. fastrapi.in was the starting point, but this is not that cursor —
-outlines rather than solid blocks, no speed-scaled size, cell-exact geometry,
-element lock-on, and neutral `difference` blending so one cursor reads on
-cream, on the espresso section and over the hero canvas.
+## Ask
 
-The demo reel pins on a wide screen and tracks sideways off vertical scroll;
-on touch and under reduced motion it stays a native horizontal scroller with
-snap points. Same markup either way — only `.is-pinned` differs.
+`js/desk.js` is not an LLM and says so in the dialog. It is a list of regexes
+tried in order, with the answer presented as a plan, a tool call or two, and a
+result — the same loop the real projects run. Open it with `/` or Ctrl/Cmd+K.
 
-Three things worth knowing if you edit this:
+## Motion and accessibility
 
-- Reveal-on-scroll must not hide its target with `clip-path: inset(100%)`.
-  IntersectionObserver measures the *clipped* rect, so a fully clipped element
-  reports zero intersection and never reveals. `.r-clip` wipes with a curtain
-  on `::after` for that reason.
-- That curtain is `inset: 0` and slides to `translateY(-100%)`, which parks it
-  directly *above* the element — so `.r-clip` must keep its `overflow: hidden`
-  or it paints over whatever precedes it.
-- Effects are gated on `prefers-reduced-motion` in both CSS and JS.
+Native scroll throughout; nothing is hijacked. Reveals, pen strokes and the
+theme wipe are transform, opacity or clip-path only. Videos play only while on
+screen. Everything is gated on `prefers-reduced-motion`.
 
-## Accessibility
-
-Whole home page is real markup, so it reads fine with JS off. The split hero
-heading keeps an `aria-label`. Focus rings are preserved, tab order follows the
-page, and the custom cursor is dropped entirely for coarse pointers.
+The home page is real markup, focus rings are kept, and the stack table is a
+real `<table>` with a caption and row and column headers.
 
 ## Local
 
 Any static server:
 
 ```sh
-npx http-server -p 8080
+python -m http.server 8080
 ```

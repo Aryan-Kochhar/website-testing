@@ -2,273 +2,367 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aryan Kochhar — AI agents, RAG pipelines, and a non-negotiable coffee order</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aryan Kochhar — AI agents, RAG pipelines &amp; quant research</title>
 <meta name="description" content="Arry — final-year AI/ML student building agentic systems and RAG pipelines that chain tools together to actually get things done.">
 <meta name="author" content="Aryan Kochhar">
-<!-- Kept in step with the active roast by js/theme.js. -->
-<meta name="theme-color" content="#fff4e6">
+<!-- Kept in step with the theme by js/app.js. -->
+<meta name="theme-color" content="#f3ecdf">
 
-<!-- og:image MUST be an absolute URL — scrapers do not resolve relative paths,
-     and a relative one is why link previews came up blank. Change the origin
-     here if the site moves off GitHub Pages. -->
+<!-- og:image MUST be an absolute URL — scrapers do not resolve relative paths.
+     Change the origin here when the site moves to its real domain. -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://aryan-kochhar.github.io/website-testing/">
 <meta property="og:title" content="Aryan Kochhar — AI agents &amp; RAG pipelines">
-<meta property="og:description" content="I build AI agents and RAG pipelines for a living, and I'm pretty relaxed about most everything else — except my coffee order.">
+<meta property="og:description" content="Final-year AI/ML student building agentic systems and RAG pipelines, with a focus on finance and quantitative research.">
 <meta property="og:image" content="https://aryan-kochhar.github.io/website-testing/assets/arry-portrait.webp">
 <meta name="twitter:card" content="summary_large_image">
 
+<!-- Pick the theme before first paint so the page never flashes the wrong
+     paper. A saved choice wins; otherwise follow the system. -->
+<script>
+(function () {
+  var d = document.documentElement, e = null;
+  d.classList.add('js');
+  try { e = localStorage.getItem('edition'); } catch (_) {}
+  if (e !== 'morning' && e !== 'evening') {
+    e = matchMedia('(prefers-color-scheme: dark)').matches ? 'evening' : 'morning';
+  }
+  d.dataset.edition = e;
+})();
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..900,0..100,0..1;1,9..144,300..900,0..100,0..1&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="css/style.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#9749;</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' fill='%231a1512'/><text x='32' y='44' text-anchor='middle' font-family='Georgia,serif' font-weight='700' font-size='34' fill='%23f3ecdf'>ak</text></svg>">
 </head>
 <body>
 
-<div class="loader" id="loader">
-  <div>
-    <div class="loader__word">brewing…</div>
-    <div class="loader__bar"><i></i></div>
-  </div>
+<a class="skip" href="#work">Skip to the work</a>
+
+<!-- ================================================================ ticker -->
+<div class="ticker">
+  <ul class="ticker__track" id="ticker" aria-label="Numbers from the projects">
+    <li class="tick"><b>QC.CTX</b><em>▼ 98%</em><i>LLM context, 13,000 → 250 chars</i></li>
+    <li class="tick"><b>LM.SCAN</b><em>▲ 293×</em><i>anomaly scan, 2.31 s → 8 ms</i></li>
+    <li class="tick"><b>LM.CTX</b><em>▼ 99.97%</em><i>tokens per query, 369K → 108</i></li>
+    <li class="tick"><b>LM.P50</b><em>259 ms</em><i>median retrieval</i></li>
+    <li class="tick"><b>LM.INGEST</b><em>▲ 2.6×</em><i>batched embeddings</i></li>
+    <li class="tick"><b>QC.TOOLS</b><em>8</em><i>chained by one agent</i></li>
+    <li class="tick"><b>CGPA</b><em>9.27</em><i>VIT, B.Tech CSE (AI &amp; ML)</i></li>
+    <li class="tick"><b>UPSTREAM</b><em>6 merged</em><i>ffn, scikit-posthocs, DSPy</i></li>
+    <li class="tick"><b>IJF</b><em>under review</em><i>first-author paper</i></li>
+  </ul>
 </div>
 
-<div class="grain" aria-hidden="true"></div>
-<div class="curtain" id="curtain" aria-hidden="true"></div>
-
-<div class="scroll-rail" aria-hidden="true"><div class="scroll-rail__fill" id="rail"></div></div>
-<div class="work-peek" id="peek" aria-hidden="true"><img alt="" id="peekImg" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="></div>
-
-<nav class="nav">
-  <a class="nav__mark" href="#/" data-route aria-label="Aryan Kochhar — home"><span class="nav__mark-full">Aryan Kochhar</span><span class="nav__mark-short" aria-hidden="true">Arry</span></a>
-  <div class="nav__links">
-    <button class="nav__link" data-goto="top">Home</button>
-    <button class="nav__link" data-goto="work">Work</button>
-    <button class="nav__link" data-goto="map">Map</button>
-    <button class="nav__link" data-goto="demos">Demos</button>
-    <button class="nav__link" data-goto="about">About</button>
-    <button class="nav__link" data-goto="contact">Contact</button>
+<!-- ================================================================== rail -->
+<div class="rail" id="rail">
+  <div class="rail__in wrap">
+    <a class="rail__brand" href="#/" data-home aria-label="Aryan Kochhar — home"><span class="rail__brand-full">Aryan Kochhar</span><span class="rail__brand-short" aria-hidden="true">Arry</span></a>
+    <span class="rail__date" id="dateline">Chennai, India</span>
+    <nav class="rail__nav" aria-label="Sections">
+      <button type="button" data-goto="work">Work</button>
+      <button type="button" data-goto="about">About</button>
+      <button type="button" data-goto="contact">Contact</button>
+      <button type="button" class="rail__ask" data-ask>Ask <kbd>/</kbd></button>
+      <button type="button" class="rail__ed" id="edition">
+        <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/></svg>
+        <span id="editionLabel">Dark</span>
+      </button>
+    </nav>
   </div>
-</nav>
+  <div class="rail__prog" aria-hidden="true"><i id="prog"></i></div>
+</div>
 
-<div class="roasts" id="roasts" role="group" aria-label="Pick a roast"></div>
+<!-- ================================================================== home -->
+<main id="home">
 
-<!-- =================================================== the long scroll === -->
-<main class="shell" id="home">
-
-  <section class="hero" id="top">
-    <canvas class="hero__canvas" id="scene" aria-hidden="true"></canvas>
-    <div class="hero__inner">
-      <div class="hero__badges r-fade">
-        <span class="badge">☕ Chennai, India</span>
-        <span class="badge badge--hot"><span class="badge__dot"></span>caffeinated &amp; available</span>
-      </div>
-      <h1 class="hero__title">Hi, I'm <em class="wob">Arry</em>.</h1>
-      <p class="hero__lede r-up">I build AI agents and RAG pipelines for a living, and I'm pretty relaxed about most everything else — except my coffee order, which comes non-negotiable.</p>
-      <div class="hero__cta r-up">
-        <button class="btn btn--solid" data-magnetic data-goto="work">See my work <span class="btn__arrow">→</span></button>
-        <button class="btn btn--ghost" data-magnetic data-goto="contact">Say hi</button>
-      </div>
+  <header class="mast wrap" id="mast">
+    <p class="mast__name">Aryan Kochhar</p>
+    <div class="mast__strip">
+      <span>AI/ML developer</span>
+      <span class="mast__motto">agents, RAG pipelines &amp; quant research</span>
+      <span>Chennai, India</span>
     </div>
-    <div class="hero__scrollcue" aria-hidden="true">keep scrolling, it gets weirder</div>
+  </header>
+
+  <section class="hero wrap" id="top">
+    <figure class="hero__photo rv">
+      <div class="halftone" id="halftone">
+        <img src="assets/arry-portrait.webp" alt="Aryan Kochhar, smiling, standing outdoors in a printed kurta" width="560" height="560" decoding="async">
+        <canvas aria-hidden="true"></canvas>
+      </div>
+      <figcaption class="cap"><span class="cap__hint" id="halftoneHint">Printed in dots — hover to develop</span></figcaption>
+    </figure>
+
+    <div class="hero__copy">
+      <p class="kicker rv"><span class="live" aria-hidden="true"></span>Open to opportunities</p>
+      <h1 class="hero__h" aria-label="Hi, I’m Arry.">
+        <span class="hero__line"><span>Hi, I’m</span></span>
+        <span class="hero__line"><span><em data-pen="under">Arry</em>.</span></span>
+      </h1>
+      <p class="hero__lede rv">I build AI agents and RAG pipelines for a living, and I’m pretty relaxed about most everything else — except my coffee order, which comes <span data-pen="circle">non-negotiable</span>.</p>
+      <div class="hero__cta rv">
+        <button type="button" class="btn btn--ink" data-goto="work">See my work <span class="btn__arrow" aria-hidden="true">→</span></button>
+        <button type="button" class="btn" data-goto="contact">Say hi</button>
+      </div>
+      <p class="note note--scroll rv" aria-hidden="true">keep scrolling, it gets weirder
+        <svg viewBox="0 0 60 44" width="46" height="34"><path d="M4 6c14 2 30 10 40 28M32 30l13 6 3-14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </p>
+    </div>
+
+    <dl class="facts rv" aria-label="At a glance">
+      <div><dt>Currently</dt><dd>Final-year B.Tech, CSE (AI &amp; ML) at VIT</dd></div>
+      <div><dt>CGPA</dt><dd class="facts__big">9.27</dd></div>
+      <div><dt>Research</dt><dd>First-author paper under review at the International Journal of Forecasting</dd></div>
+      <div><dt>Open source</dt><dd>6 fixes merged into ffn, scikit-posthocs and DSPy</dd></div>
+      <div><dt>Experience</dt><dd>AI/ML intern, WE Excel Software</dd></div>
+      <div><dt>Based in</dt><dd>Chennai, India</dd></div>
+    </dl>
   </section>
 
-  <div class="marquee" aria-hidden="true">
-    <div class="marquee__track" id="marquee">
-      <span class="marquee__item">Agentic systems</span>
-      <span class="marquee__item">RAG &amp; retrieval</span>
-      <span class="marquee__item">Quant research</span>
-      <span class="marquee__item">Tools, chained</span>
-      <span class="marquee__item">Non-negotiable coffee order</span>
-    </div>
-  </div>
-
-  <section class="section section--tight">
-    <div class="wrap">
-      <div class="focus-grid">
-        <div class="focus-cell r-up">
-          <span class="focus-cell__mark">01</span>
-          <h3 class="focus-cell__title">Agentic Systems</h3>
-          <p class="focus-cell__blurb">Agents that chain tools, not just answer questions.</p>
-        </div>
-        <div class="focus-cell r-up">
-          <span class="focus-cell__mark">02</span>
-          <h3 class="focus-cell__title">RAG &amp; Retrieval</h3>
-          <p class="focus-cell__blurb">Grounding LLMs in real data, reliably.</p>
-        </div>
-        <div class="focus-cell r-up">
-          <span class="focus-cell__mark">03</span>
-          <h3 class="focus-cell__title">Quant Research</h3>
-          <p class="focus-cell__blurb">Where finance meets machine learning.</p>
-        </div>
-      </div>
-    </div>
+  <section class="beats wrap" aria-labelledby="beatsH">
+    <h2 class="beats__h" id="beatsH">Focus</h2>
+    <ol class="beats__list">
+      <li class="rv">
+        <span class="beats__n">01</span>
+        <h3>Agentic Systems</h3>
+        <p>Agents that chain tools, not just answer questions.</p>
+      </li>
+      <li class="rv">
+        <span class="beats__n">02</span>
+        <h3>RAG &amp; Retrieval</h3>
+        <p>Grounding LLMs in real data, reliably.</p>
+      </li>
+      <li class="rv">
+        <span class="beats__n">03</span>
+        <h3>Quant Research</h3>
+        <p>Where finance meets machine learning.</p>
+      </li>
+    </ol>
   </section>
 
-  <section class="section" id="work">
-    <div class="wrap">
-      <div class="kicker r-fade">☕ fresh off the brew</div>
-      <h2 class="h-display r-up">Things I've <em>built</em></h2>
-      <p class="lede r-up">Mostly agentic AI and RAG systems — with the occasional detour into RL research, earthquake data and 3D cities.</p>
-      <div class="work-list" id="workList"></div>
-    </div>
+  <!-- ------------------------------------------------------ featured work -->
+  <section class="sec wrap" id="work">
+    <header class="sec__head">
+      <span class="sec__page">01</span>
+      <h2 class="sec__title rv">Things I’ve <em>built</em></h2>
+      <p class="sec__meta rv">The three on my résumé. Real runs, screen-recorded — not mockups.</p>
+    </header>
+    <div class="works" id="works"></div>
+    <noscript>
+      <ul class="plain">
+        <li><a href="https://github.com/Aryan-Kochhar/Agentic-Quantitative-Research-Copilot">Quant Copilot</a> — an agent that chains 8 tools to answer finance questions.</li>
+        <li><a href="https://github.com/Aryan-Kochhar/LogMind---Server-Log-Analyzer">LogMind</a> — a RAG-powered server log analyzer.</li>
+        <li><a href="https://github.com/Aryan-Kochhar/-ArchiTech-">ArchiTech</a> — text prompt to 3D city layout.</li>
+        <li><a href="https://github.com/Aryan-Kochhar">Everything else, on GitHub</a>.</li>
+      </ul>
+    </noscript>
   </section>
 
-  <section class="section section--raised" id="map">
-    <div class="wrap">
-      <div class="kicker r-fade">☕ the brew map</div>
-      <h2 class="h-display r-up">How it all <em>connects</em></h2>
-      <p class="lede r-up">Every project, every tool, and the ones that keep showing up together. Drag things around — it's fine, nothing breaks.</p>
-      <div class="brew-map r-up">
-        <canvas class="brew-map__canvas" id="brewMap" role="img"
-                aria-label="A map of my projects and the tools they share. The same information is listed below for screen readers."></canvas>
-        <div class="brew-map__foot">
-          <span id="brewStat"></span>
-          <span id="brewHint"></span>
-        </div>
-        <ul class="sr-only" id="brewList"></ul>
-      </div>
-    </div>
-  </section>
+  <!-- ------------------------------------------------------ everything else -->
+  <section class="sec wrap" id="more">
+    <header class="sec__head">
+      <span class="sec__page">02</span>
+      <h2 class="sec__title rv">And the <em>rest</em></h2>
+      <p class="sec__meta rv">From GitHub — with the occasional detour into RL research, earthquake data and 3D cities.</p>
+    </header>
+    <div class="cards" id="cards"></div>
 
-  <section class="section section--reel" id="demos">
-    <div class="wrap">
-      <div class="kicker r-fade">watch it run</div>
-      <h2 class="h-display r-up">The <em>demos</em></h2>
-      <p class="lede r-up" style="margin-bottom:34px">Real runs, screen-recorded — not mockups. Keep scrolling; they move sideways.</p>
-    </div>
-    <div class="reel" id="reel"></div>
-  </section>
-
-  <section class="section section--raised" id="about">
-    <div class="wrap">
-      <div class="kicker r-fade">the person behind the code</div>
-      <h2 class="h-display r-up">A bit about <em>me</em></h2>
-      <div class="about-grid" style="margin-top:40px">
-        <div class="about-copy">
-          <p class="r-up">I'm a final-year AI/ML student at Vellore Institute of Technology (CGPA 9.27, if that matters to you), building agentic systems and RAG pipelines that chain tools together to actually get things done — not just answer questions.</p>
-          <p class="r-up">Last summer I interned at WE Excel Software, where I built an OCR pipeline for HR document processing and tuned retrieval for a RAG-based HR chatbot. Outside of internships, I'm usually deep in a side project — teaching an agent to backtest trading strategies, or turning a text prompt into a whole 3D city.</p>
-          <div class="aside-note r-up">
-            <span class="aside-note__mark" data-roast-icon></span>
-            <span>When I'm not at my desk, I'm probably making another cup of coffee, or sidequesting with my girlfriend and friends <b>(interpersonal skills example lol)</b> — usually both are happening at once.</span>
-          </div>
-          <button class="pour" id="pour" data-magnetic>
-            <span data-roast-icon></span> pour one <span class="pour__n" id="pourN">0</span>
-          </button>
-          <span class="quote-bubble" id="quote" role="status" aria-live="polite"></span>
-        </div>
-        <div class="photo-frame photo-frame--tall r-clip" data-parallax="0.12">
-          <img src="assets/arry-about.jpg" alt="Aryan Kochhar" loading="lazy" decoding="async">
-        </div>
+    <div class="wire rv">
+      <div class="wire__head">
+        <h3>Also on GitHub</h3>
+        <span class="wire__src" id="wireSrc"><span class="live" aria-hidden="true"></span>github.com/Aryan-Kochhar</span>
       </div>
-
-      <div class="res-block r-up">
-        <div class="res-h">Education</div>
-        <div class="res-item">
-          <div class="res-item__title">B.Tech, Computer Science (AI &amp; ML) — VIT</div>
-          <div class="res-item__meta">Aug 2023 – Jul 2027 · CGPA 9.27</div>
-        </div>
-      </div>
-
-      <div class="res-block r-up">
-        <div class="res-h">Experience</div>
-        <div class="res-item">
-          <div class="res-item__title">AI/ML Intern — WE Excel Software Pvt. Ltd.</div>
-          <div class="res-item__meta">June 2025 · On-site</div>
-          <ul>
-            <li>Built an OCR pipeline extracting data from Aadhaar &amp; PAN cards for an internal HRMS.</li>
-            <li>Tuned retrieval settings for a RAG-based HR chatbot.</li>
-            <li>Explored web scraping, automation and API integration.</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="res-block r-up">
-        <div class="res-h">Skills</div>
-        <div class="skill-grid">
-          <div><div class="skill-grid__t">Languages</div><div class="skill-grid__v">Python, C, C++, Java, SQL</div></div>
-          <div><div class="skill-grid__t">AI / ML</div><div class="skill-grid__v">NumPy, Pandas, OpenCV, scikit-learn, LangChain, RAG</div></div>
-          <div><div class="skill-grid__t">Web</div><div class="skill-grid__v">HTML, CSS, JavaScript</div></div>
-          <div><div class="skill-grid__t">Tools</div><div class="skill-grid__v">FastAPI, REST APIs, MongoDB Atlas, Redis, MCP, Ollama, Git</div></div>
-        </div>
-      </div>
-
-      <div class="res-block r-up">
-        <div class="res-h">Certifications</div>
-        <div class="skill-grid__v">AI Foundations Associate (Oracle) · Intro to Model Context Protocol (Anthropic) · Generative AI (LinkedIn)</div>
-        <div class="callout">
-          <div class="callout__label">Submitted</div>
-          <div class="callout__body">"Label Construction and the Measured Value of Nonlinear Forecasting Models: Evidence from Bank Failure Prediction" — submitted to the International Journal of Forecasting. First author.</div>
-        </div>
-      </div>
+      <ul class="wire__list" id="wire"></ul>
     </div>
   </section>
 
-  <section class="section" id="contact">
-    <div class="wrap wrap--narrow">
-      <div class="contact-head">
-        <div class="photo-frame photo-frame--round r-clip" data-parallax="0.05">
-          <img src="assets/arry-portrait.webp" alt="Aryan Kochhar" loading="lazy" decoding="async">
-        </div>
-        <div>
-          <div class="kicker r-fade">get in touch</div>
-          <h2 class="h-display r-up" style="margin-bottom:0">Let's <em>talk</em></h2>
-        </div>
+  <!-- ---------------------------------------------------------- the stack -->
+  <section class="sec wrap" id="map">
+    <header class="sec__head">
+      <span class="sec__page">03</span>
+      <h2 class="sec__title rv">How it all <em>connects</em></h2>
+      <p class="sec__meta rv">Every project, and the tools that keep showing up together.</p>
+    </header>
+    <div class="box rv" id="box"></div>
+  </section>
+
+  <!-- -------------------------------------------------------------- about -->
+  <section class="sec wrap" id="about">
+    <header class="sec__head">
+      <span class="sec__page">04</span>
+      <h2 class="sec__title rv">A bit about <em>me</em></h2>
+      <p class="sec__meta rv">The person behind the code.</p>
+    </header>
+
+    <div class="profile">
+      <figure class="profile__photo rv">
+        <div class="frame"><img src="assets/arry-formal.webp" alt="Aryan Kochhar in a white shirt and patterned tie, arms crossed and smiling, outdoors" width="793" height="1033" loading="lazy" decoding="async"></div>
+      </figure>
+
+      <div class="profile__copy">
+        <p class="profile__lead rv">I’m a final-year AI/ML student at Vellore Institute of Technology (CGPA <span data-pen="circle">9.27</span>, if that matters to you), building agentic systems and RAG pipelines that chain tools together to actually get things done — not just answer questions.</p>
+        <p class="rv">In the summer of 2025 I interned at WE Excel Software, where I built an OCR pipeline for HR document processing and tuned retrieval for a RAG-based HR chatbot. Outside of internships, I’m usually deep in a side project — teaching an agent to backtest trading strategies, or turning a text prompt into a whole 3D city.</p>
+        <blockquote class="pull rv">
+          <p>When I’m not at my desk, I’m probably making another cup of coffee, or sidequesting with my girlfriend and friends — usually both are happening at once.</p>
+          <span class="note note--pull">(interpersonal skills example lol)</span>
+        </blockquote>
       </div>
-      <p class="lede r-up" style="margin-bottom:30px">Drop me a line — I read everything, and I reply faster than I probably should.</p>
+    </div>
 
-      <a class="contact-mail r-up" href="mailto:aryankochhar2005@gmail.com">aryankochhar2005@gmail.com</a>
+    <div class="file rv">
+      <div class="file__col">
+        <h3>Education</h3>
+        <p class="file__t">B.Tech, Computer Science (AI &amp; ML)</p>
+        <p>Vellore Institute of Technology</p>
+        <p class="file__m">Aug 2023 – Jul 2027 · CGPA 9.27</p>
+      </div>
+      <div class="file__col">
+        <h3>Experience</h3>
+        <p class="file__t">AI/ML Intern — WE Excel Software Pvt. Ltd.</p>
+        <p class="file__m">June 2025 · On-site</p>
+        <ul>
+          <li>Built an OCR pipeline extracting data from Aadhaar &amp; PAN cards for an internal HRMS.</li>
+          <li>Tuned retrieval settings for a RAG-based HR chatbot.</li>
+          <li>Explored web scraping, automation and API integration.</li>
+        </ul>
+      </div>
+      <div class="file__col">
+        <h3>Skills</h3>
+        <dl>
+          <dt>Languages</dt><dd>Python, C, C++, Java, SQL</dd>
+          <dt>AI / ML</dt><dd>NumPy, Pandas, OpenCV, sentence-transformers, RAG, vector search, embeddings, LLM function calling</dd>
+          <dt>Web</dt><dd>HTML, CSS, JavaScript, REST APIs, WebSocket</dd>
+          <dt>Tools</dt><dd>FastAPI, MongoDB Atlas, Redis, Streamlit, Ollama, Selenium, Jupyter, Git</dd>
+        </dl>
+      </div>
+      <div class="file__col">
+        <h3>Certifications</h3>
+        <ul class="file__certs">
+          <li>AI Foundations Associate <span>Oracle</span></li>
+          <li>Intro to Model Context Protocol <span>Anthropic</span></li>
+          <li>Generative AI <span>LinkedIn</span></li>
+        </ul>
+      </div>
+    </div>
 
-      <!-- novalidate, and the handler in app.js does the checking so the
-           messages match the rest of the page. Without that handler the
-           `required` attributes below would be decorative. -->
-      <form class="form r-up" id="contactForm" novalidate>
+    <article class="paper rv">
+      <div>
+        <p class="kicker"><b>Research</b><span>First author</span></p>
+        <h3 class="paper__t">“Label Construction and the Measured Value of Nonlinear Forecasting Models: Evidence from Bank Failure Prediction”</h3>
+      </div>
+      <div class="paper__side">
+        <span class="stamp">Under review</span>
+        <p class="paper__m">International Journal of Forecasting (Elsevier)</p>
+      </div>
+    </article>
+
+    <section class="fixes rv" aria-labelledby="fixesH">
+      <div class="fixes__head">
+        <h3 id="fixesH">Fixed upstream</h3>
+        <p>Bugs I found in other people’s libraries, fixed, and got merged.</p>
+      </div>
+      <ol class="fixes__list" id="fixes"></ol>
+    </section>
+  </section>
+
+  <!-- ------------------------------------------------------------ contact -->
+  <section class="sec wrap" id="contact">
+    <header class="sec__head">
+      <span class="sec__page">05</span>
+      <h2 class="sec__title rv">Let’s <em>talk</em></h2>
+      <p class="sec__meta rv">I read everything.</p>
+    </header>
+
+    <div class="letters">
+      <div class="letters__copy">
+        <p class="letters__lede rv">Drop me a line — I read everything, and I reply faster than I probably should.</p>
+        <a class="mail rv" href="mailto:aryankochhar2005@gmail.com"><span data-pen="under">aryankochhar2005@gmail.com</span></a>
+        <ul class="social rv">
+          <li><a href="https://github.com/Aryan-Kochhar" target="_blank" rel="noopener">GitHub</a></li>
+          <li><a href="https://linkedin.com/in/aryan-kochhar" target="_blank" rel="noopener">LinkedIn</a></li>
+          <li><a href="https://x.com/AryanKochhar2" target="_blank" rel="noopener">X</a></li>
+          <li><a href="https://instagram.com/_aryankochhar" target="_blank" rel="noopener">Instagram</a></li>
+        </ul>
+      </div>
+
+      <!-- novalidate: the handler in app.js does the checking so the messages
+           match the rest of the page. No backend — it composes a mailto. -->
+      <form class="form rv" id="contactForm" novalidate>
         <div class="field">
           <label for="f-name">Your name</label>
           <input id="f-name" name="name" type="text" autocomplete="name" required>
-          <span class="field__err">I'd like to know who I'm talking to.</span>
+          <span class="field__err">I’d like to know who I’m talking to.</span>
         </div>
         <div class="field">
           <label for="f-email">Your email</label>
           <input id="f-email" name="email" type="email" autocomplete="email" required>
-          <span class="field__err">That doesn't look like an email address.</span>
+          <span class="field__err">That doesn’t look like an email address.</span>
         </div>
         <div class="field">
-          <label for="f-msg">What's up?</label>
+          <label for="f-msg">What’s up?</label>
           <textarea id="f-msg" name="message" rows="4" required></textarea>
           <span class="field__err">Say something — anything.</span>
         </div>
-        <button class="btn btn--solid" type="submit" data-magnetic style="margin-top:10px; justify-self:start">
-          Send it over <span class="btn__arrow">→</span>
-        </button>
+        <button class="btn btn--ink" type="submit">Send it over <span class="btn__arrow" aria-hidden="true">→</span></button>
+        <p class="form__note" id="formNote" role="status" aria-live="polite"></p>
       </form>
-
-      <div class="social-row r-fade">
-        <a href="mailto:aryankochhar2005@gmail.com">Email</a>
-        <a href="https://github.com/Aryan-Kochhar" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://linkedin.com/in/aryan-kochhar" target="_blank" rel="noopener">LinkedIn</a>
-        <a href="https://x.com/AryanKochhar2" target="_blank" rel="noopener">X</a>
-        <a href="https://instagram.com/_aryankochhar" target="_blank" rel="noopener">Instagram</a>
-      </div>
     </div>
   </section>
 </main>
 
-<!-- Project detail route renders here. -->
-<main class="shell" id="detail" hidden></main>
+<!-- A single project renders here (#/p/:id). -->
+<main id="article" hidden></main>
 
-<footer class="footer">
-  <span class="footer__meta">© 2026 Aryan Kochhar</span>
-  <span class="footer__sig">Arry 💜 Rads</span>
+<footer class="foot wrap">
+  <div class="foot__row">
+    <p class="foot__brand">Aryan Kochhar</p>
+    <p class="foot__sig">Arry 💜 Rads</p>
+    <p class="foot__links">
+      <a href="jitters/">Easter egg</a>
+      <button type="button" data-goto="top">Back to top ↑</button>
+    </p>
+  </div>
+  <div class="foot__fine">
+    <span>© 2026 Aryan Kochhar</span>
+    <span>No build step, no framework.</span>
+  </div>
 </footer>
+
+<!-- ================================================================== ask -->
+<dialog class="desk" id="desk" aria-labelledby="deskH">
+  <div class="desk__bar">
+    <h2 id="deskH"><span class="live" aria-hidden="true"></span>Ask about Arry</h2>
+    <button type="button" class="desk__x" data-close aria-label="Close">esc</button>
+  </div>
+  <div class="desk__log" id="deskLog" aria-live="polite"></div>
+  <div class="desk__chips" id="deskChips"></div>
+  <form class="desk__form" id="deskForm" autocomplete="off">
+    <span aria-hidden="true">›</span>
+    <input id="deskIn" type="text" placeholder="Projects, numbers, the paper, how to reach him…" aria-label="Your question" enterkeyhint="send">
+    <button type="submit">Ask</button>
+  </form>
+  <p class="desk__fine">No LLM back here — a few hundred lines of pattern-matching doing an impression of one. The real agents are in the projects.</p>
+</dialog>
+
+<!-- ============================================================= lightbox -->
+<dialog class="lb" id="lb" aria-label="Figure">
+  <button type="button" class="lb__x" data-close aria-label="Close">esc</button>
+  <button type="button" class="lb__nav lb__nav--prev" data-step="-1" aria-label="Previous figure">←</button>
+  <figure class="lb__fig">
+    <div class="lb__media" id="lbMedia"></div>
+    <figcaption class="cap" id="lbCap"></figcaption>
+  </figure>
+  <button type="button" class="lb__nav lb__nav--next" data-step="1" aria-label="Next figure">→</button>
+</dialog>
 
 <noscript>
   <style>
-    .loader { display: none; }
-    .r-up, .r-fade, .r-clip { opacity: 1; transform: none; }
-    .r-clip::after { display: none; }
-    .roasts { display: none; }
+    .rv, .hero__line > span { opacity: 1 !important; transform: none !important; }
+    .rail__ask, .rail__ed, .wire, #map, .fixes { display: none !important; }
   </style>
 </noscript>
 

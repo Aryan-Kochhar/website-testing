@@ -6,6 +6,13 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "5173"],
       "port": 5173
+    },
+    {
+      "name": "site-fresh",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5188"],
+      "port": 5188,
+      "autoPort": false
     }
   ]
 }
