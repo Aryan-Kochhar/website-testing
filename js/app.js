@@ -10,7 +10,7 @@
    behaviour: the theme switch, pen annotations, the lightbox, the form. */
 
 import {
-  PROJECTS, GITHUB_USER, WIRE_SKIP, WIRE_FALLBACK, UPSTREAM, COFFEE_QUOTES,
+  PROJECTS, GITHUB_USER, WIRE_SKIP, WIRE_FALLBACK, UPSTREAM, COFFEE_QUOTES, COFFEE_TENTH,
 } from './data.js';
 import { initHalftone } from './halftone.js';
 import { initDesk } from './desk.js';
@@ -486,6 +486,39 @@ function syncEdition() {
   $('meta[name="theme-color"]')?.setAttribute('content', getComputedStyle(root).getPropertyValue('--paper').trim());
 }
 
+/* -------------------------------------------------------------- coffee -- */
+
+/* The one easter egg kept from the original site: each click pours a cup and
+   says one of Arry's lines. Deliberately small — a counter and a sentence. */
+function initPour() {
+  const btn = $('#pour');
+  const bubble = $('#quote');
+  const count = $('#pourN');
+  if (!btn || !bubble) return;
+
+  let pours = 0;
+  let last = -1;
+  let timer = 0;
+
+  btn.addEventListener('click', () => {
+    pours++;
+    count.textContent = pours;
+
+    let line = COFFEE_TENTH;
+    if (pours % 10 !== 0) {
+      // Never the same line twice running.
+      let i;
+      do { i = (Math.random() * COFFEE_QUOTES.length) | 0; } while (i === last && COFFEE_QUOTES.length > 1);
+      last = i;
+      line = COFFEE_QUOTES[i];
+    }
+    bubble.textContent = line;
+    bubble.classList.add('is-on');
+    clearTimeout(timer);
+    timer = setTimeout(() => bubble.classList.remove('is-on'), 2600);
+  });
+}
+
 /* ------------------------------------------------------------ lightbox -- */
 
 const lb = $('#lb');
@@ -610,6 +643,7 @@ function boot() {
   initRail();
   initLightbox();
   initForm();
+  initPour();
   syncEdition();
 
   initHalftone($('#halftone'), { reduced: REDUCED });

@@ -42,6 +42,14 @@
 
 <a class="skip" href="#work">Skip to the work</a>
 
+<!-- Roughens the edge of the one coffee ring on the page. -->
+<svg class="defs" width="0" height="0" aria-hidden="true" focusable="false">
+  <filter id="rough" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency=".028" numOctaves="3" seed="7"/>
+    <feDisplacementMap in="SourceGraphic" scale="11"/>
+  </filter>
+</svg>
+
 <!-- ================================================================ ticker -->
 <div class="ticker">
   <ul class="ticker__track" id="ticker" aria-label="Numbers from the projects">
@@ -51,7 +59,6 @@
     <li class="tick"><b>LM.P50</b><em>259 ms</em><i>median retrieval</i></li>
     <li class="tick"><b>LM.INGEST</b><em>▲ 2.6×</em><i>batched embeddings</i></li>
     <li class="tick"><b>QC.TOOLS</b><em>8</em><i>chained by one agent</i></li>
-    <li class="tick"><b>CGPA</b><em>9.27</em><i>VIT, B.Tech CSE (AI &amp; ML)</i></li>
     <li class="tick"><b>UPSTREAM</b><em>6 merged</em><i>ffn, scikit-posthocs, DSPy</i></li>
     <li class="tick"><b>IJF</b><em>under review</em><i>first-author paper</i></li>
   </ul>
@@ -95,6 +102,15 @@
         <canvas aria-hidden="true"></canvas>
       </div>
       <figcaption class="cap"><span class="cap__hint" id="halftoneHint">Printed in dots — hover to develop</span></figcaption>
+      <!-- The one coffee ring: somebody put a cup down on the corner. -->
+      <svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
+        <g filter="url(#rough)" fill="none" stroke="currentColor" stroke-linecap="round">
+          <circle cx="100" cy="100" r="80" stroke-width="6.5" stroke-dasharray="441 62"/>
+          <circle cx="100" cy="100" r="73.5" stroke-width="2" opacity=".55"/>
+          <circle cx="100" cy="100" r="86" stroke-width="1.3" stroke-dasharray="70 190 110 133" opacity=".5"/>
+        </g>
+        <circle cx="100" cy="100" r="76" fill="currentColor" opacity=".06"/>
+      </svg>
     </figure>
 
     <div class="hero__copy">
@@ -115,11 +131,9 @@
 
     <dl class="facts rv" aria-label="At a glance">
       <div><dt>Currently</dt><dd>Final-year B.Tech, CSE (AI &amp; ML) at VIT</dd></div>
-      <div><dt>CGPA</dt><dd class="facts__big">9.27</dd></div>
       <div><dt>Research</dt><dd>First-author paper under review at the International Journal of Forecasting</dd></div>
       <div><dt>Open source</dt><dd>6 fixes merged into ffn, scikit-posthocs and DSPy</dd></div>
       <div><dt>Experience</dt><dd>AI/ML intern, WE Excel Software</dd></div>
-      <div><dt>Based in</dt><dd>Chennai, India</dd></div>
     </dl>
   </section>
 
@@ -210,6 +224,13 @@
           <p>When I’m not at my desk, I’m probably making another cup of coffee, or sidequesting with my girlfriend and friends — usually both are happening at once.</p>
           <span class="note note--pull">(interpersonal skills example lol)</span>
         </blockquote>
+        <div class="pourbar rv">
+          <button type="button" class="pour" id="pour">
+            <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 10h1.5a2.5 2.5 0 0 1 0 5H17M7 2.5c0 1.2 1 1.3 1 2.5M11 2.5c0 1.2 1 1.3 1 2.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            pour one <span class="pour__n" id="pourN">0</span>
+          </button>
+          <span class="quote" id="quote" role="status" aria-live="polite"></span>
+        </div>
       </div>
     </div>
 
@@ -362,7 +383,7 @@
 <noscript>
   <style>
     .rv, .hero__line > span { opacity: 1 !important; transform: none !important; }
-    .rail__ask, .rail__ed, .wire, #map, .fixes { display: none !important; }
+    .rail__ask, .rail__ed, .wire, #map, .fixes, .pourbar { display: none !important; }
   </style>
 </noscript>
 

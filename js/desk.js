@@ -149,7 +149,7 @@ export function initDesk({ projects, upstream, quotes = [], actions }) {
     if (has(q, /hire|hiring|available|availability|open to|looking for|recruit|opportunit/)) {
       return {
         intent: 'availability.get', steps: [['get_status()', 'open to opportunities'], ['get_contact()', '1 inbox']],
-        answer: 'Yes — open to opportunities, with the B.Tech wrapping up in July 2027. Fastest route is <a href="mailto:aryankochhar2005@gmail.com">aryankochhar2005@gmail.com</a>; he replies faster than he probably should.',
+        answer: 'Yes — open to opportunities. Fastest route is <a href="mailto:aryankochhar2005@gmail.com">aryankochhar2005@gmail.com</a>; he replies faster than he probably should.',
       };
     }
     if (has(q, /contact|e-?mail|\bmail\b|reach|\bdm\b|linkedin|twitter|\bx\b|instagram|github|social|talk to/)) {

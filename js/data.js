@@ -318,8 +318,9 @@ export const UPSTREAM = [
 ];
 
 /* --------------------------------------------------------------- quotes -- */
-/* Arry's coffee one-liners, from the original site. They no longer have a
-   button of their own — "Ask" answers with one if someone brings up coffee. */
+/* Arry's coffee one-liners, from the original site. The small "pour one"
+   button in the bio shows one per click, and "Ask" answers with one if
+   someone brings up coffee. */
 
 export const COFFEE_QUOTES = [
   'ngl I needed that',
@@ -329,8 +330,12 @@ export const COFFEE_QUOTES = [
   "coffee o'clock, always",
   'this is basically self-care at this point',
   'third one today, no shame',
+  "keep clicking, I'm not judging",
   'my code runs better with more of these',
   'bas ek aur cup',
   "chalta hai, one more won't hurt",
   'atp just drink monster dude 🙏🙏',
 ];
+
+/* Every tenth pour. */
+export const COFFEE_TENTH = 'bas bas, itna kaafi hai 😅';
