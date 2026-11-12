@@ -1,0 +1,10 @@
+// Cloudflare Workers config. The site is plain static files served from the
+// repo root; there is no build step and no Worker script.
+// Files that should not be published are listed in .assetsignore.
+{
+  "name": "aryan-website",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "."
+  }
+}

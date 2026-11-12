@@ -1,0 +1,10 @@
+# Not part of the published site. Same syntax as .gitignore.
+.git
+.claude
+.wrangler
+node_modules
+tools
+README.md
+wrangler.jsonc
+.assetsignore
+.nojekyll
